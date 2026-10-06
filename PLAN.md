@@ -49,12 +49,13 @@ The user can rotate and zoom around the product.
 The current configurator includes:
 
 ### Scene
+
+- Arcade — default / hero environment
 - Studio
 - Retro Desk
-- Arcade (default homepage scene)
 - Dark Tech
 
-Scenes only change the environment around the product.
+Scenes only change the environment around the product and remain independent from Editions.
 
 ### Edition
 - Classic
@@ -333,14 +334,23 @@ Any external assets added later should have a licence that allows their use in t
 
 ### Open questions
 
-- Final project name.
-- Final mobile layout.
-- Whether all four environments need additional visual polish.
-- Final number of playable games.
+- Final original project name
+- Final polish before submission
 
 ### Next action
 
-Review the configurator on different screen sizes and continue improving the design using the moodboard as reference without breaking existing functionality.
+Prepare the project for the design review.
+
+Compare the live configurator directly with the moodboard and identify specific visual differences that still need refinement.
+
+Priorities:
+- final Arcade environment polish
+- visual consistency
+- usability
+- final original project naming
+- complete moodboard source information
+
+Make only focused changes and keep the current working version stable.
 
 ## Development steps
 
@@ -361,3 +371,23 @@ Review the configurator on different screen sizes and continue improving the des
 - Added Vector Field
 - Added Space Invaders-style game
 - Improved responsive behaviour and visual hierarchy
+
+## Version control & publishing
+
+Version control:
+Git
+
+Repository:
+GitHub
+
+Repository URL:
+https://github.com/FernandezLuiz/retro-handheld-configurator
+
+Hosting:
+Vercel
+
+Live URL:
+https://retro-handheld-configurator.vercel.app
+
+The main branch is connected to Vercel.
+Every push to main automatically triggers a new deployment.
