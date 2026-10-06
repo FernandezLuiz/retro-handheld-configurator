@@ -1,0 +1,27 @@
+import { test, expect } from '@playwright/test'
+
+test('graphic identity remains readable and keyboard accessible on desktop and mobile', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('#play')).toBeEnabled({ timeout: 30000 })
+  await page.evaluate(() => document.fonts.ready)
+  await expect(page.locator('h1')).toHaveText('GameBoy')
+  await expect(page.locator('#play')).toContainText('ENTER GAME')
+  expect(await page.locator('h1').evaluate(el => getComputedStyle(el).fontFamily)).toContain('Syne')
+  await page.locator('[data-value="Arcade"]').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('[data-value="Arcade"]')).toHaveAttribute('aria-pressed', 'true')
+  await page.locator('[data-edition="Atomic"]').click()
+  await expect(page.locator('[data-value="Arcade"]')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('[data-value="Translucent"]')).toHaveAttribute('aria-pressed', 'true')
+  await page.locator('#reset').click()
+  await page.evaluate(() => scrollTo(0, 0))
+  await page.screenshot({ path: '/tmp/gameboy-desktop.png', fullPage: true })
+  await page.setViewportSize({ width: 1024, height: 900 })
+  await page.screenshot({ path: '/tmp/gameboy-narrow-desktop.png', fullPage: true })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForTimeout(700)
+  await page.screenshot({ path: '/tmp/gameboy-mobile.png', fullPage: true })
+
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})

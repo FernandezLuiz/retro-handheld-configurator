@@ -1,0 +1,21 @@
+{
+  "name": "my-first-project",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.js",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "opentype.js": "^2.0.0",
+    "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "three": "^0.186.0"
+  }
+}

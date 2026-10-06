@@ -1,0 +1,234 @@
+{
+  "meshes": [
+    {
+      "mesh": "body",
+      "material": "body_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "back_panel",
+      "material": "back_panel_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "shell_seam",
+      "material": "shell_seam_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "screen_bezel",
+      "material": "screen_bezel_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "display_frame",
+      "material": "display_frame_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "screen",
+      "material": "screen_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "screen_glass",
+      "material": "screen_glass_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "dpad",
+      "material": "dpad_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "select_button",
+      "material": "select_button_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "start_button",
+      "material": "start_button_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "speaker",
+      "material": "speaker_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "battery_latch",
+      "material": "battery_latch_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "rear_vents",
+      "material": "rear_vents_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "internal_pcb",
+      "material": "internal_pcb_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_battery",
+      "material": "internal_battery_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_battery_strap",
+      "material": "internal_battery_strap_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "internal_chip_main",
+      "material": "internal_chip_main_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_chip_power",
+      "material": "internal_chip_power_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_ribbon",
+      "material": "internal_ribbon_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_battery_connector",
+      "material": "internal_battery_connector_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "status_led",
+      "material": "status_led_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "control_wells",
+      "material": "control_wells_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "button_a",
+      "material": "button_a_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "button_b",
+      "material": "button_b_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "side_buttons",
+      "material": "side_buttons_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "power_switch",
+      "material": "power_switch_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "volume_wheel",
+      "material": "volume_wheel_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "accessory_port",
+      "material": "accessory_port_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "screw_wells",
+      "material": "screw_wells_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "screws",
+      "material": "screws_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_speaker",
+      "material": "internal_speaker_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_posts",
+      "material": "internal_posts_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_traces",
+      "material": "internal_traces_material",
+      "slots": 1,
+      "status": "modified"
+    },
+    {
+      "mesh": "internal_contacts",
+      "material": "internal_contacts_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "internal_passives",
+      "material": "internal_passives_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "internal_capacitors",
+      "material": "internal_capacitors_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "internal_solder",
+      "material": "internal_solder_material",
+      "slots": 1,
+      "status": "added"
+    }
+  ],
+  "triangles": 35378,
+  "dimensionsMeters": [
+    0.09060000255703926,
+    0.14800000190734863,
+    0.03265000134706497
+  ],
+  "bytes": 1064516,
+  "validation": "GLTFLoader parse and all 20 previous mesh names preserved. See npm test and npm run test:browser for control and UI validation."
+}

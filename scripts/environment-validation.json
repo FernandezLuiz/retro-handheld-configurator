@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Studio",
+    "triangles": 4252,
+    "meshes": 5,
+    "objects": 10,
+    "safeOrbitRadius": 6.6
+  },
+  {
+    "name": "Retro Desk",
+    "triangles": 13320,
+    "meshes": 106,
+    "objects": 121,
+    "safeOrbitRadius": 6.6
+  },
+  {
+    "name": "Arcade",
+    "triangles": 10628,
+    "meshes": 152,
+    "objects": 172,
+    "safeOrbitRadius": 6.6
+  },
+  {
+    "name": "Dark Tech",
+    "triangles": 10754,
+    "meshes": 163,
+    "objects": 181,
+    "safeOrbitRadius": 6.6
+  }
+]

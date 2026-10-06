@@ -1,0 +1,161 @@
+import { test, expect } from '@playwright/test'
+import { gameThemes } from '../src/play/surface.js'
+const inspect = page => page.evaluate(async () => {
+  const { inspectViewer } = await import('/src/scene/viewer.js')
+  return inspectViewer(document.querySelector('#scene'))
+})
+async function phase(page, value) { await expect.poll(async () => (await inspect(page))?.play.phase, { timeout: 12000 }).toBe(value) }
+async function boot(page) {
+  await page.route('https://fonts.googleapis.com/**', route => route.abort())
+  await page.goto('/')
+  await expect(page.locator('#play')).toBeEnabled()
+}
+async function enterGame(page, game = 'vector') {
+  await page.locator('#play').click()
+  await phase(page, 'selecting')
+  await page.locator(`[data-game="${game}"]`).click()
+  await phase(page, 'playing')
+}
+
+test('Play zooms into the actual canvas screen, plays, and restores configuration and camera', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error' && message.text().includes('THREE.')) errors.push(message.text()) })
+  await boot(page)
+  await page.locator('[data-edition="Atomic"]').click()
+  await page.locator('[data-option="scene"][data-value="Arcade"]').click()
+  await page.locator('[data-option="buttons"][data-value="Moss"]').click()
+  await page.waitForTimeout(500)
+  const before = await inspect(page)
+  await page.screenshot({ path: 'scripts/play-idle.png' })
+  await enterGame(page)
+  const playing = await inspect(page)
+  expect(playing.liveScreen).toBe(true)
+  expect(playing.screenFlipY).toBe(false)
+  expect(playing.camera).not.toEqual(before.camera)
+  expect(playing.controlsEnabled).toBe(false)
+  expect(playing.play.theme).toBe('Custom')
+  expect(await page.locator('#app').evaluate(node => node.inert)).toBe(true)
+  await expect(page.locator('#game-title')).toHaveText('VECTOR FIELD')
+  await page.screenshot({ path: 'scripts/play-mode.png' })
+  await page.locator('.game-restart').click()
+  const scroll = await page.evaluate(() => scrollY)
+  await page.keyboard.down('ArrowLeft')
+  await expect.poll(async () => (await inspect(page)).play.game.player.angle).toBeLessThan(playing.play.game.player.angle)
+  const moved = await inspect(page)
+  expect(moved.play.game.player.angle).toBeLessThan(playing.play.game.player.angle)
+  expect(moved.buttonFeedback.find(mesh => mesh.name === 'dpad').quaternion).not.toEqual(before.buttonFeedback.find(mesh => mesh.name === 'dpad').quaternion)
+  await page.keyboard.up('ArrowLeft')
+  await page.keyboard.down('ArrowUp')
+  await expect.poll(async () => Math.hypot((await inspect(page)).play.game.player.vx, (await inspect(page)).play.game.player.vy)).toBeGreaterThan(10)
+  await page.keyboard.up('ArrowUp')
+  await page.keyboard.down('KeyZ')
+  expect((await inspect(page)).buttonFeedback.find(mesh => mesh.name === 'button_a').position[2]).toBeLessThan(0)
+  await expect.poll(async () => (await inspect(page)).play.game.shots).toBeGreaterThan(0)
+  await page.keyboard.up('KeyZ')
+  await page.keyboard.down('ShiftLeft')
+  expect((await inspect(page)).buttonFeedback.find(mesh => mesh.name === 'button_b').position[2]).toBeLessThan(0)
+  await expect.poll(async () => (await inspect(page)).play.game.player.cooldown).toBeGreaterThan(0)
+  await page.keyboard.up('ShiftLeft')
+  expect(await page.evaluate(() => scrollY)).toBe(scroll)
+  await page.locator('.game-restart').click()
+  expect((await inspect(page)).play.game.phase).toBe('playing')
+  await page.keyboard.press('Escape')
+  await phase(page, 'idle')
+  const after = await inspect(page)
+  expect(after.product).toEqual(before.product)
+  expect(after.buttonFeedback).toEqual(before.buttonFeedback)
+  for (let i = 0; i < 3; i++) expect(after.camera[i]).toBeCloseTo(before.camera[i], 6)
+  expect(after.target).toEqual(before.target)
+  expect(after.controlsEnabled).toBe(true)
+  expect(after.play.keyboardActive).toBe(false)
+  await expect(page.locator('.viewport')).toHaveAttribute('data-scene', 'Arcade')
+  await expect(page.locator('#edition-selection')).toHaveText('Custom')
+  await expect(page.locator('#play')).toBeFocused()
+  await page.locator('#reset').click()
+  await expect(page.locator('#edition-selection')).toHaveText('Classic')
+  await expect(page.locator('.viewport')).toHaveAttribute('data-scene', 'Arcade')
+  expect(errors).toEqual([])
+})
+
+test('palettes ignore scenes; repeated play sessions release keyboard listeners and reuse resources', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.activeGameListeners = 0
+    const add = window.addEventListener.bind(window)
+    window.addEventListener = (type, callback, options) => {
+      if (['keydown', 'keyup'].includes(type) && options?.signal) {
+        window.activeGameListeners++
+        options.signal.addEventListener('abort', () => window.activeGameListeners--, { once: true })
+      }
+      return add(type, callback, options)
+    }
+  })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await boot(page)
+  for (const name of ['Classic', 'Atomic', 'Forest', 'Sunset', 'Stealth']) {
+    await page.locator(`[data-edition="${name}"]`).click()
+    expect((await inspect(page)).play.theme).toBe(name)
+    await page.locator('[data-option="scene"][data-value="Dark Tech"]').click()
+    expect((await inspect(page)).play.theme).toBe(name)
+    const rgb = await page.locator('.game-display canvas').evaluate(canvas => [...canvas.getContext('2d').getImageData(2, 2, 1, 1).data].slice(0, 3))
+    expect(rgb).toEqual(gameThemes[name][0].slice(1).match(/../g).map(hex => parseInt(hex, 16)))
+    await expect(page.locator('#edition-selection')).toHaveText(name)
+  }
+  await page.waitForTimeout(300)
+  const before = await inspect(page)
+  for (let i = 0; i < 3; i++) {
+    await enterGame(page)
+    expect((await inspect(page)).camera).toEqual(before.camera)
+    expect(await page.evaluate(() => activeGameListeners)).toBe(2)
+    await page.locator('.game-exit').click()
+    await phase(page, 'idle')
+    expect(await page.evaluate(() => activeGameListeners)).toBe(0)
+    expect((await inspect(page)).memory).toEqual(before.memory)
+    expect((await inspect(page)).sceneObjects).toEqual(before.sceneObjects)
+  }
+  await page.keyboard.press('ArrowLeft')
+  expect((await inspect(page)).play.pressed).toEqual([])
+})
+
+test('early exit, touch input and missing-model Play gating stay safe', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await boot(page)
+  await page.locator('#play').click()
+  await page.keyboard.press('Escape')
+  await phase(page, 'idle')
+  await enterGame(page)
+  const left = page.locator('[data-key="left"]')
+  // Real mouse events exercise pointer capture as well as the touch-sized button.
+  const bounds = await left.boundingBox()
+  await page.mouse.move(bounds.x + 20, bounds.y + 20)
+  await page.mouse.down()
+  await page.waitForTimeout(100)
+  expect((await inspect(page)).play.pressed).toContain('left')
+  await page.mouse.up()
+  await page.locator('.game-exit').click()
+  await phase(page, 'idle')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.route('**/models/retro-handheld.glb', route => route.fulfill({ status: 404, body: '' }))
+  await page.reload()
+  await expect(page.locator('canvas[aria-label^="Temporary"]')).toBeVisible()
+  await expect(page.locator('#play')).toBeDisabled()
+})
+
+
+test('three lost lives reach Game Over; Space starts a fresh run', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await boot(page)
+  await enterGame(page)
+  await expect.poll(async () => (await inspect(page)).play.game.phase, { timeout: 45000 }).toBe('over')
+  expect((await inspect(page)).play.game.lives).toBe(0)
+  await expect(page.locator('.game-message')).toHaveText('Game over — Space to retry')
+  await page.screenshot({ path: 'scripts/vector-field-game-over.png' })
+  await page.keyboard.press('Space')
+  await expect.poll(async () => (await inspect(page)).play.game.phase).toBe('playing')
+  const state = (await inspect(page)).play.game
+  expect(state.lives).toBe(3)
+  expect(state.wave).toBe(1)
+  expect(state.score).toBe(0)
+  await page.keyboard.press('Escape')
+  await phase(page, 'idle')
+})
