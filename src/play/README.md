@@ -14,12 +14,26 @@ independence are preserved.
 | Space / Z | Fire |
 | Shift / X | Short boost, with a cooldown |
 | R or Restart | Restart the run |
-| Space on Game Over | Retry |
+| Space / Z on Game Over | Retry |
 | Escape or Exit Game | Return to the saved configurator view |
 
 Touch controls provide rotation, thrust, fire and boost. There is no reverse
 thrust. Keyboard listeners exist only during a Play session. Blur/visibility
 changes pause simulation and clear held inputs. Focus returns to PLAY on exit.
+
+Space Invaders uses Left / A and Right / D to move, Space / Z to fire,
+R or Restart to restart, and Escape or Exit Game to leave. Space / Z also
+restarts after Game Over. Its touch controls are labelled Move left/right and Fire.
+
+`controls.js` defines the actual bindings and generates the game library and
+in-game instructions from the same data. Selecting a library entry starts the game;
+keyboard users can focus an entry and press Enter or Space.
+
+Outside Play Mode, the model's A/B, D-pad and Start/Select meshes can be pressed
+with a mouse or touch. A press temporarily owns the pointer instead of starting
+an orbit drag, and releases back to the exact original transform. Play Mode's
+full-screen game covers those meshes, so gameplay retains the keyboard and
+on-screen touch controls. Keyboard/touch actions still animate the 3D controls.
 
 ## Existing implementation
 
@@ -43,8 +57,9 @@ changes pause simulation and clear held inputs. Focus returns to PLAY on exit.
   Palette changes never enter the physics simulation; Scenes do not select
   palettes.
 - `play-mode.js`: original entry/exit state machine, modal, session input,
-  focus handling, touch input and tactile feedback bridge. The viewer's legacy
-  button-B channel is mapped to boost without changing the 3D viewer.
+  focus handling, touch input and tactile feedback bridge. Button A reflects
+  fire; button B reflects boost. `scene/button-interaction.js` owns the temporary
+  mesh transforms and physical pointer input within the existing render loop.
 - `play.css`: existing overlay layout, with smooth vector-canvas sampling.
 
 The original viewer owns the only animation loop. Simulation advances in 120 Hz

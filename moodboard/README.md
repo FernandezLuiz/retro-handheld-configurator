@@ -74,7 +74,7 @@ The references are used for specific visual qualities only. Their branding, prod
 
 ---
 
-### retro_monochrome.png
+### retro_game.avif
 
 **Take:** monochrome retro graphic language, grid structure and technical print-like styling.  
 **Ignore:** the exact text content and page layout.

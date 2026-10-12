@@ -1,5 +1,5 @@
 .in-play-mode .hero-type, .in-play-mode .sidebar, .in-play-mode .viewport-footer { opacity: calc(1 - var(--play-dim, 0) * .9); pointer-events: none; }
-.play-overlay { position: fixed; z-index: 20; inset: 0; padding: 24px; display: grid; place-items: center; background: rgb(14 21 19 / var(--reveal, 0)); color: #d6ded2; overscroll-behavior: contain; }
+.play-overlay { position: fixed; z-index: 20; inset: 0; padding: 24px; display: grid; place-items: safe center; background: rgb(14 21 19 / var(--reveal, 0)); color: #d6ded2; overscroll-behavior: contain; overflow-y: auto; }
 .play-overlay[hidden] { display: none; }
 .game-shell { width: min(720px, 100%); opacity: var(--reveal, 0); transform: scale(calc(.94 + var(--reveal, 0) * .06)); }
 .game-picker { display: none; width: 100%; margin: 28px auto 0; }
@@ -29,7 +29,7 @@
 .game-picker-heading { position: relative; padding: 26px 28px 25px; }
 .game-picker-heading .eyebrow { color: #aabea6; }
 .game-picker-heading p { margin: 0; font-size: 11px; color: #b7c7b1; }
-.game-picker-options button { position: relative; width: 100%; min-height: 112px; padding: 15px 20px; display: grid; grid-template-columns: 92px 82px minmax(0, 1fr) 40px; align-items: center; gap: 14px; border: 0; border-radius: 0; background: #1c2a22; text-align: left; transition: background-color .16s ease, color .16s ease; }
+.game-picker-options button { position: relative; width: 100%; min-height: 112px; padding: 15px 20px; display: grid; grid-template-columns: 68px 74px minmax(0, 1fr) 32px; align-items: center; gap: 14px; border: 0; border-radius: 0; background: #1c2a22; text-align: left; transition: background-color .16s ease, color .16s ease; }
 .game-picker-options button:hover, .game-picker-options button:focus-visible { background: #2b3c2f; }
 .game-picker-options button:active { background: #374c38; }
 .game-card-index { align-self: start; margin-top: 8px; color: #a9b7a4; font-size: 9px; letter-spacing: 1px; white-space: nowrap; }
@@ -44,7 +44,12 @@
 .invaders-glyph i:first-child { width: 2px; height: 9px; left: 36px; top: 36px; background: #d7f553; }
 .game-card-copy { display: grid; gap: 8px; min-width: 0; }
 .game-card-copy strong { color: #e0ead9; font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -.035em; }
-.game-card-copy small { color: #a9b9a4; font-size: 10px; letter-spacing: .2px; }
+.game-card-copy small { color: #b7c7b1; font-size: 12px; line-height: 1.5; }
+.game-card-controls { display: grid; gap: 6px; margin-top: 4px; }
+.control-pair { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 11px; line-height: 1.6; }
+.control-pair b { font-weight: 500; color: #becdb8; }
+.play-overlay kbd { font: inherit; color: #e0ead9; white-space: nowrap; }
+.game-card-controls kbd + kbd { margin-left: 8px; }
 .game-card-launch { justify-self: end; display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #738771; color: #d7f553; font-size: 18px; transition: transform .16s ease, background-color .16s ease; }
 .game-picker-options button:hover .game-card-launch, .game-picker-options button:focus-visible .game-card-launch { transform: translate(2px, -2px); background: #d7f553; color: #19241e; }
 .game-picker-footer { padding-block: 16px; }
@@ -53,7 +58,8 @@
 .game-display::after { content: ''; pointer-events: none; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #0000 0 3px, #00000009 3px 4px); }
 .game-status { margin-top: 14px; font-size: 10px; letter-spacing: 1px; min-height: 34px; }
 .game-message { color: #94a48e; letter-spacing: .2px; }
-.game-hints { text-align: center; font-size: 9px; letter-spacing: 1px; line-height: 1.8; color: #8d9b8b; margin: 15px 0 0; }
+.game-hints { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 20px; color: #b7c7b1; margin: 16px 0 0; }
+.game-hints .control-pair { gap: 6px; }
 .game-touch { display: none; justify-content: space-between; margin-top: 18px; }
 .game-touch button { width: 44px; height: 44px; touch-action: none; user-select: none; font-size: 16px; }
 .touch-pad { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); gap: 5px; }
@@ -77,11 +83,15 @@
   .game-picker { margin-top: 20px; }
   .game-picker-heading { padding: 23px 17px; }
   .game-picker-intro, .game-picker-footer { padding-inline: 13px; font-size: 8px; }
-  .game-picker-options button { min-height: 100px; padding: 12px; grid-template-columns: 44px 50px minmax(0, 1fr) 26px; gap: 7px; }
+  .game-picker-options button { min-height: 100px; padding: 12px; grid-template-columns: 40px minmax(0, 1fr) 26px; gap: 7px; }
   .game-card-index { font-size: 7px; white-space: normal; }
-  .game-card-glyph { transform: scale(.62); transform-origin: left center; margin-right: -28px; }
+  .game-card-glyph { display: none; }
   .game-card-copy strong { font-size: 13px; }
-  .game-card-copy small { font-size: 8px; }
+  .game-card-copy small { font-size: 11px; }
+  .game-card-controls { grid-column: 1 / -1; }
+  .game-card-controls .control-pair { font-size: 10px; }
+  .game-picker-footer { flex-wrap: wrap; line-height: 1.6; }
+  .game-hints { gap: 4px 12px; }
   .game-card-launch { width: 25px; height: 25px; font-size: 14px; }
   .viewport-actions { gap: 6px; }
 }

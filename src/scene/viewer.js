@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { createTitle } from './title.js'
+import { createButtonInteraction } from './button-interaction.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { createPlaceholder } from './placeholder.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -92,7 +93,11 @@ export function createViewer(container) {
   let savedView = null
   let screenFocus = null
   let screenDistance = 1
-  let buttonMeshes = []
+  const buttonInteraction = createButtonInteraction({
+    element: renderer.domElement, camera, controls, reducedMotion,
+    available: () => !savedView && !disposed,
+    onInteraction: stopAttract,
+  })
 
   function updatePlayCamera(dt) {
     if (!savedView) return
@@ -123,24 +128,6 @@ export function createViewer(container) {
     }
   }
 
-  function setButtonFeedback(keys) {
-    for (const { mesh, position, quaternion, center } of buttonMeshes) {
-      mesh.position.copy(position)
-      mesh.quaternion.copy(quaternion)
-      const pressed = mesh.name === 'dpad'
-        ? ['left', 'right', 'up', 'down'].some(key => keys.has(key))
-        : keys.has(mesh.name === 'button_a' ? 'action' : 'brake')
-      // GLB transforms are applied; pivot around the control itself, without deforming it.
-      if (pressed && mesh.name === 'dpad') {
-        const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-          (Number(keys.has('down')) - Number(keys.has('up'))) * 0.045,
-          (Number(keys.has('right')) - Number(keys.has('left'))) * 0.045, 0))
-        mesh.quaternion.multiply(tilt)
-        mesh.position.add(center).sub(center.clone().applyQuaternion(tilt))
-        mesh.position.z -= 0.0003
-      } else if (pressed) mesh.position.z -= 0.00065
-    }
-  }
   const defaultDirection = new THREE.Vector3(0.14, 0.14, 1).normalize()
 
   function frameModel(preserveView = false) {
@@ -189,11 +176,7 @@ export function createViewer(container) {
       const modelSize = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3())
       framedWidthRadius = Math.hypot(modelSize.x, modelSize.z) / 2
       frameModel()
-      buttonMeshes = ['dpad', 'button_a', 'button_b'].map(name => {
-        const mesh = model.getObjectByName(name)
-        if (mesh) mesh.geometry.computeBoundingBox()
-        return mesh && { mesh, position: mesh.position.clone(), quaternion: mesh.quaternion.clone(), center: mesh.geometry.boundingBox.getCenter(new THREE.Vector3()) }
-      }).filter(Boolean)
+      buttonInteraction.attach(model)
       renderer.domElement.setAttribute('aria-label', 'Handheld 3D preview. Drag to rotate and scroll to zoom.')
     } catch (error) {
       disposeModel(gltf.scene)
@@ -224,7 +207,7 @@ export function createViewer(container) {
         controls.autoRotate = attracting
         controls.autoRotateSpeed = 0.24
       }
-      controls.update()
+      if (!buttonInteraction.active) controls.update()
       if (!reducedMotion.matches) {
         idleTime += dt
         pointer.lerp(pointerTarget, 1 - Math.exp(-dt * 3.5))
@@ -239,6 +222,7 @@ export function createViewer(container) {
     }
     title.update(camera, playProgress, idleTime, reducedMotion.matches)
     frameHandler?.(dt)
+    buttonInteraction.update(dt)
     // The opaque game view covers the 3D canvas. Keep the one shared clock,
     // but avoid an invisible full-resolution transmission pass every frame.
     // The same live texture is uploaded again as soon as the exit begins.
@@ -266,7 +250,8 @@ export function createViewer(container) {
       playProgress,
       liveScreen: Boolean(screenTexture?.isCanvasTexture),
       screenFlipY: screenTexture?.flipY,
-      buttonFeedback: buttonMeshes.map(({ mesh }) => ({ name: mesh.name, position: mesh.position.toArray(), quaternion: mesh.quaternion.toArray() })),
+      buttonFeedback: buttonInteraction.inspect(),
+      buttonTargets: buttonInteraction.targets(),
       target: controls.target.toArray(),
       play: playInspector?.(),
       idlePresentation: { position: productRoot.position.toArray(), rotation: productRoot.rotation.toArray() },
@@ -279,11 +264,12 @@ export function createViewer(container) {
     canPlay() { return Boolean(model.getObjectByName('screen')) && !disposed },
     setFrameHandler(handler, inspector) { frameHandler = handler; playInspector = inspector },
     setScreenTexture(texture) { screenTexture = texture; handheld.setScreenTexture(texture) },
-    setButtonFeedback,
+    setButtonFeedback: keys => buttonInteraction.setKeys(keys),
     get playProgress() { return playProgress },
     get attracting() { return attracting },
     setPlayMode(playing, reducedMotion = false) {
       if (playing && !savedView) {
+        buttonInteraction.clear()
         stopAttract()
         const screen = model.getObjectByName('screen')
         if (!screen) return false
@@ -310,6 +296,7 @@ export function createViewer(container) {
       environment.setPreset(configuration.scene)
     },
     reset() {
+      buttonInteraction.clear()
       stopAttract()
       controls.enableDamping = false
       controls.reset()
@@ -325,6 +312,7 @@ export function createViewer(container) {
       renderer.setAnimationLoop(null)
       frameHandler = null
       playInspector = null
+      buttonInteraction.dispose()
       controls.dispose()
       disposeModel(model)
       if (!model.getObjectByName('screen')) screenTexture?.dispose()

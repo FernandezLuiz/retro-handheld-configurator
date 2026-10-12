@@ -38,7 +38,7 @@ export function createTitle(scene, onReady = () => {}) {
     // Leave generous room for bevels, perspective depth and narrow phone screens.
     const scale = Math.min(halfWidth * 1.05 / (box.max.x - box.min.x), halfHeight * .17 / (box.max.y - box.min.y))
     group.scale.setScalar(scale)
-    group.position.set(0, halfHeight * .7, -distance).applyQuaternion(camera.quaternion).add(camera.position)
+    group.position.set(0, halfHeight * .8, -distance).applyQuaternion(camera.quaternion).add(camera.position)
     group.quaternion.copy(camera.quaternion)
     const drift = reducedMotion ? 0 : Math.sin(elapsed * 0.42)
     mesh.rotation.set(.10 + drift * .004, -.14 + drift * .008, -.015)

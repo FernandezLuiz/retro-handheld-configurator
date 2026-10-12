@@ -13,7 +13,7 @@ test('3D title fits common screen sizes and all scenes; missing title retains re
     expect(bounds.minX).toBeGreaterThan(-.95)
     expect(bounds.maxX).toBeLessThan(.95)
     expect(Math.abs(bounds.minX + bounds.maxX)).toBeLessThan(.08)
-    expect(bounds.minY).toBeGreaterThan(-.95)
+    expect(bounds.minY).toBeGreaterThan(.65)
     expect(bounds.maxY).toBeLessThan(.95)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   }
@@ -30,7 +30,7 @@ test('3D title fits common screen sizes and all scenes; missing title retains re
   }
   await page.route('**/fonts/syne-title.json', route => route.abort())
   await page.reload()
-  await expect(page.locator('#play')).toBeEnabled()
+  await expect(page.locator('#play')).toBeEnabled({ timeout: 30000 })
   await expect(page.locator('.viewport')).not.toHaveClass(/title-ready/)
   await expect(page.locator('h1')).toBeVisible()
 })

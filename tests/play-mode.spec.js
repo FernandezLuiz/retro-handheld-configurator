@@ -148,7 +148,7 @@ test('three lost lives reach Game Over; Space starts a fresh run', async ({ page
   await enterGame(page)
   await expect.poll(async () => (await inspect(page)).play.game.phase, { timeout: 45000 }).toBe('over')
   expect((await inspect(page)).play.game.lives).toBe(0)
-  await expect(page.locator('.game-message')).toHaveText('Game over — Space to retry')
+  await expect(page.locator('.game-message')).toHaveText('Game over — R / Space / Z to restart')
   await page.screenshot({ path: 'scripts/vector-field-game-over.png' })
   await page.keyboard.press('Space')
   await expect.poll(async () => (await inspect(page)).play.game.phase).toBe('playing')

@@ -1,8 +1,9 @@
 import { createGameSurface } from './surface.js'
 import { createSpaceInvadersSurface } from './space-invaders-surface.js'
 import './play.css'
+import { gameControls, bindingsFor, controlMarkup, sessionControls } from './controls.js'
 
-const bindings = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', KeyZ: 'action', Space: 'action', KeyX: 'boost', ShiftLeft: 'boost', ShiftRight: 'boost' }
+const bindings = Object.fromEntries(Object.keys(gameControls).map(game => [game, bindingsFor(game)]))
 export function createPlayMode(viewer, app, button) {
   const surfaces = { vector: createGameSurface(), invaders: createSpaceInvadersSurface() }
   let selectedGame = 'vector'
@@ -22,14 +23,13 @@ export function createPlayMode(viewer, app, button) {
         <div class="game-picker-intro"><span class="game-os-status"><i aria-hidden="true"></i> SYSTEM READY</span><span class="game-os-count">02 PROGRAMS LOADED</span></div>
         <div class="game-picker-heading"><span class="eyebrow">YOUR NEXT DISTRACTION</span><h3 id="game-picker-title">Choose a program<span aria-hidden="true">_</span></h3><p>Select a game to launch on your handheld.</p></div>
         <div class="game-picker-options">
-          <button type="button" data-game="vector"><span class="game-card-index">01 / ARCADE</span><span class="game-card-glyph vector-glyph" aria-hidden="true"><i></i><i></i><i></i></span><span class="game-card-copy"><strong>VECTOR FIELD</strong><small>Rotate · Thrust · Survive</small></span><span class="game-card-launch" aria-hidden="true">↗</span></button>
-          <button type="button" data-game="invaders"><span class="game-card-index">02 / DEFENSE</span><span class="game-card-glyph invaders-glyph" aria-hidden="true"><i></i><i></i><i></i></span><span class="game-card-copy"><strong>SPACE INVADERS</strong><small>Move · Fire · Defend</small></span><span class="game-card-launch" aria-hidden="true">↗</span></button>
+          ${Object.entries(gameControls).map(([id, game], index) => `<button type="button" data-game="${id}"><span class="game-card-index">0${index + 1} / ${id === 'vector' ? 'ARCADE' : 'DEFENSE'}</span><span class="game-card-glyph ${id === 'vector' ? 'vector' : 'invaders'}-glyph" aria-hidden="true"><i></i><i></i><i></i></span><span class="game-card-copy"><strong>${game.title}</strong><small>${game.description}</small><span class="game-card-controls">${controlMarkup(id)}</span></span><span class="game-card-launch" aria-hidden="true">↗</span></button>`).join('')}
         </div>
-        <div class="game-picker-footer"><span>FORM / PLAY SYSTEM</span><span>SELECT A PROGRAM TO BEGIN →</span></div>
+        <div class="game-picker-footer"><span>CLICK / TAP / ENTER TO START</span><span>${sessionControls.restart.label} — RESTART · ${sessionControls.exit.label} — EXIT</span></div>
       </div>
       <div class="game-display"></div>
-      <div class="game-status"><span class="game-score" aria-live="off">SCORE 00000</span><span class="game-message" role="status"></span><button type="button" class="game-restart">Restart</button></div>
-      <p class="game-hints">← → / A D — ROTATE · ↑ / W — THRUST · SPACE / Z — FIRE · SHIFT / X — BOOST</p>
+      <div class="game-status"><span class="game-score" aria-live="off">SCORE 00000</span><span class="game-message" role="status"></span><button type="button" class="game-restart">Restart <kbd>${sessionControls.restart.label}</kbd></button></div>
+      <div class="game-hints" aria-label="Keyboard controls"></div>
       <div class="game-touch" aria-label="Touch game controls">
         <div class="touch-pad"><button data-key="up" aria-label="Thrust">↑</button><button data-key="left" aria-label="Rotate left">←</button><button disabled aria-label="No reverse thrust">↓</button><button data-key="right" aria-label="Rotate right">→</button></div>
         <div class="touch-actions"><button data-key="action">Z<span>Fire</span></button><button data-key="boost">X<span>Boost</span></button></div>
@@ -57,8 +57,7 @@ export function createPlayMode(viewer, app, button) {
   function syncKeys() {
     keys.clear()
     for (const action of pressed.values()) keys.add(action)
-    // Keep the existing viewer's button-B channel; boost replaces the old action.
-    viewer.setButtonFeedback(new Set([...keys].map(key => key === 'boost' ? 'brake' : key)))
+    viewer.setButtonFeedback(keys)
   }
   function clearKeys() { pressed.clear(); syncKeys() }
   function restart() {
@@ -74,10 +73,9 @@ export function createPlayMode(viewer, app, button) {
     display.replaceChildren(surface.canvas)
     viewer.setScreenTexture(surface.texture)
     surface.setReducedMotion(reducedMotion.matches)
-    title.textContent = name === 'vector' ? 'VECTOR FIELD' : 'SPACE INVADERS'
-    hints.textContent = name === 'vector'
-      ? '← → / A D — ROTATE · ↑ / W — THRUST · SPACE / Z — FIRE · SHIFT / X — BOOST'
-      : '← → / A D — MOVE · SPACE / Z — FIRE'
+    title.textContent = gameControls[name].title
+    hints.innerHTML = `${controlMarkup(name)}<span class="control-pair"><b>Restart</b><kbd>${sessionControls.restart.label}</kbd></span><span class="control-pair"><b>Exit</b><kbd>${sessionControls.exit.label}</kbd></span>`
+    for (const direction of ['left', 'right']) overlay.querySelector(`[data-key="${direction}"]`).setAttribute('aria-label', `${name === 'vector' ? 'Rotate' : 'Move'} ${direction}`)
     overlay.dataset.currentGame = name
     phase = 'playing'; overlay.dataset.phase = phase
     surface.game.restart(); surface.draw(); accumulator = paintTime = 0
@@ -110,7 +108,7 @@ export function createPlayMode(viewer, app, button) {
     const signal = keyboard.signal
     window.addEventListener('keydown', event => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
-      if (event.code === 'Escape') { event.preventDefault(); exit(); return }
+      if (sessionControls.exit.codes.includes(event.code)) { event.preventDefault(); exit(); return }
       if (event.code === 'Tab') {
         const buttons = [...overlay.querySelectorAll('button')].filter(node => node.getClientRects().length && !node.disabled)
         const index = buttons.indexOf(document.activeElement)
@@ -118,18 +116,19 @@ export function createPlayMode(viewer, app, button) {
         buttons[(index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length]?.focus()
         return
       }
+      if (phase !== 'playing') return
       // Leave native button activation intact when Space is used on a control.
       if (event.code === 'Space' && event.target instanceof HTMLButtonElement) return
-      const action = bindings[event.code]
+      const action = bindings[selectedGame][event.code]
       if (action) {
         event.preventDefault()
         if (action === 'action' && surface.game.state.phase === 'over' && !event.repeat) { restart(); return }
         pressed.set(event.code, action); syncKeys()
       }
-      if (event.code === 'KeyR' && !event.repeat) { event.preventDefault(); restart() }
+      if (sessionControls.restart.codes.includes(event.code) && !event.repeat) { event.preventDefault(); restart() }
     }, { signal })
     window.addEventListener('keyup', event => {
-      if (bindings[event.code]) { event.preventDefault(); pressed.delete(event.code); syncKeys() }
+      if (bindings[selectedGame][event.code]) { event.preventDefault(); pressed.delete(event.code); syncKeys() }
     }, { signal })
     window.addEventListener('blur', () => setPaused(true), { signal })
     window.addEventListener('focus', () => { if (!document.hidden) setPaused(false) }, { signal })
@@ -188,7 +187,7 @@ export function createPlayMode(viewer, app, button) {
       paintTime %= 1 / 60
       surface.draw()
       score.textContent = `SCORE ${String(surface.game.state.score).padStart(5, '0')}`
-      if (surface.game.state.phase === 'over') message.textContent = 'Game over — Space to retry'
+      if (surface.game.state.phase === 'over') message.textContent = 'Game over — R / Space / Z to restart'
     }
   }
   button.addEventListener('click', enter, { signal: lifetime.signal })
