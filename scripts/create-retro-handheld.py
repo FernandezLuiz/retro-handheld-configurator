@@ -2,7 +2,7 @@
 Meter-scale geometry; front faces -Y in Blender and +Z after glTF export.
 All 12 configurable exterior and 8 original internal names are preserved.
 """
-import bpy, math, json
+import bpy, bmesh, math, json, sys
 from pathlib import Path
 from mathutils import Vector
 ROOT=Path(__file__).resolve().parents[1]
@@ -163,6 +163,14 @@ def cut(obj,cutter):
     bpy.ops.object.modifier_apply(modifier=mod.name)
     bpy.data.objects.remove(cutter,do_unlink=True)
 
+def union(obj,addition):
+    activate(obj)
+    mod=obj.modifiers.new('Moulded support','BOOLEAN')
+    mod.operation='UNION'
+    mod.object=addition
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+    bpy.data.objects.remove(addition,do_unlink=True)
+
 def join(parts,name):
     activate(parts[0])
     for obj in parts: obj.select_set(True)
@@ -182,12 +190,13 @@ def ring(name,loc,outer,inner,depth,axis='Y'):
     return obj
 
 # Two actual hollow housing halves, separated by a 0.6 mm gasket seam.
-body=rounded('body',(0,-.0049,0),(.090,.0182,.148),.0086,.0012)
+body=rounded('body',(0,-.0054,0),(.090,.0172,.148),.0086,.0010)
 cut(body,rounded('cut',(0,-.002,0),(.085,.018,.143),.0069,.0008))
 # Front skin thickness 3 mm; rear half is only 2.5 mm thick.
 rear=rounded('back_panel',(0,.0091,0),(.0894,.0106,.1474),.0084,.0011)
 cut(rear,rounded('cut',(0,.005,0),(.0844,.014,.1424),.0064,.0006))
-seam=rounded('shell_seam',(0,.0035,0),(.0885,.0004,.1465),.0083,.0001)
+# The gasket seats 0.1 mm into each half so its edges cannot leak background.
+seam=rounded('shell_seam',(0,.0035,0),(.0885,.0008,.1465),.0083,.0001)
 cut(seam,rounded('cut',(0,.0035,0),(.085,.004,.143),.0066,.0002))
 
 # Screen pocket and a four-layer display: bezel / frame / LCD / thin glass.
@@ -204,7 +213,10 @@ cylinder('status_led',(.029,-.01765,.001),.00115,.0007,.0002,vertices=24)
 wells=[]
 for x,z,r in [(-.022,-.022,.014),(.028,-.016,.0085),(.009,-.029,.0085)]:
     cut(body,cylinder('cut',(x,-.013,z),r,.009,0))
-    wells.append(ring('control_wells',(x,-.0131,z),r+.0003,r-.0011,.0022))
+    well=cylinder('control_wells',(x,-.01175,z),r+.0003,.0049,.00018)
+    # A blind bore leaves travel clearance behind the moving pivot and buttons.
+    cut(well,cylinder('cut',(x,-.013,z),r-.0011,.0054,0))
+    wells.append(well)
 
 w,a=.0118,.0042
 outline=[(-a,w),(a,w),(a,a),(w,a),(w,-a),(a,-a),(a,-w),(-a,-w),(-a,-a),(-w,-a),(-w,a),(-a,a)]
@@ -235,12 +247,10 @@ for name,x,z in [('button_a',.028,-.016),('button_b',.009,-.029)]:
     cut(button,bpy.context.object)
 for name,x in [('select_button',-.009),('start_button',.012)]:
     cut(body,rounded('cut',(x,-.013,-.046),(.014,.007,.0058),.0024,.0003))
-    well=rounded('control_wells',(x,-.0132,-.046),(.0144,.0018,.0062),.0026,.0003)
-    cut(well,rounded('cut',(x,-.0132,-.046),(.0123,.004,.0043),.0018,.0002))
+    well=rounded('control_wells',(x,-.0123,-.046),(.0144,.0036,.0062),.0026,.0003)
+    cut(well,rounded('cut',(x,-.0133,-.046),(.0123,.0046,.0043),.0018,.0002))
     wells.append(well)
     rounded(name,(x,-.0137,-.046),(.012,.0026,.004),.0017,.0004)
-# Recessed elastomer backing prevents a see-through gap around the D-pad.
-wells.append(cylinder('control_wells',(-.022,-.0107,-.022),.0129,.001,.0002))
 join(wells,'control_wells')
 
 # A tidy two-row array of real perforations above a recessed acoustic cloth plate.
@@ -258,32 +268,51 @@ join(ribs,'speaker')
 
 # Rear battery door fitted into the rear shell, with a reveal and thumbnail latch.
 cut(rear,rounded('cut',(0,.012,-.010),(.063,.010,.086),.005,.0003))
-door=rounded('back_panel',(0,.0129,-.010),(.0618,.0026,.0848),.0045,.0005)
-cut(door,rounded('cut',(0,.014,-.048),(.018,.004,.0038),.0014,.0002))
-rounded('battery_latch',(0,.0138,-.048),(.014,.0017,.0026),.001,.0003)
+# An integral ledge closes the reveal without overlapping the removable door.
+lip=rounded('back_panel',(0,.0115,-.010),(.068,.0018,.091),.0075,.0002)
+cut(lip,rounded('cut',(0,.0115,-.010),(.0594,.006,.0814),.0032,.0002))
+union(rear,lip)
+door=rounded('back_panel',(0,.01345,-.010),(.0622,.0018,.0852),.0046,.0003)
+# Blind thumb recess: the former through-cut exposed the room around the latch.
+cut(door,rounded('cut',(0,.0145,-.048),(.018,.0014,.0038),.0014,.00015))
+rounded('battery_latch',(0,.014,-.048),(.014,.0005,.0026),.001,.00015)
 # A small upper service ventilation band.
 for x in [-.014,-.007,0,.007,.014]:
     cut(rear,rounded('cut',(x,.013,.051),(.003,.007,.009),.001,.0002))
-rounded('rear_vents',(0,.0108,.051),(.035,.0008,.012),.002,.0002)
+rounded('rear_vents',(0,.0116,.051),(.039,.0008,.015),.002,.0002)
 join([rear,door],'back_panel')
 
 # Tactile right power slider, left rocker, and a recessed knurled volume wheel.
 # Side detail uses the same understated charcoal, no lettering or branding.
-cut(body,box('cut',(.044,-.003,.029),(.008,.009,.018),.001))
-housing=box('side_buttons',(.0436,-.003,.029),(.0018,.0068,.015),.0005)
-cut(housing,box('cut',(.0443,-.003,.030),(.0015,.0049,.011),.0004))
-slider=box('power_switch',(.0443,-.003,.033),(.0022,.0044,.005),.0006)
-# Grip grooves in the moving slider.
-for z in [.032,.034]: cut(slider,box('cut',(.0452,-.003,z),(.001,.005,.0005),.0001))
-cut(body,cylinder('cut',(-.044,-.001,.025),.0063,.008,0,'X'))
-wheel=cylinder('volume_wheel',(-.0438,-.001,.025),.0055,.0028,.00035,'X',48)
-# Faceted scallops around the wheel's outer rim are readable in silhouette.
-for i in range(16):
-    angle=i*math.tau/16
-    cut(wheel,cylinder('cut',(-.0438,-.001+math.cos(angle)*.0057,.025+math.sin(angle)*.0057),.0005,.005,0,'X',12))
+cut(body,box('cut',(.044,-.003,.029),(.008,.0074,.016),.0007))
+housing=box('side_buttons',(.0442,-.003,.029),(.0024,.0086,.0174),.0004)
+cut(housing,box('cut',(.0452,-.003,.029),(.0024,.0054,.013),.0003))
+slider=box('power_switch',(.0451,-.003,.0315),(.0018,.0046,.0052),.00035)
+# Shallow grooves stay inside the face instead of cutting through its bevels.
+for z in [.0308,.0322]: cut(slider,box('cut',(.046,-.003,z),(.0005,.0034,.00035),0))
+# Move the complete wheel pocket forward of the shell joint. The recessed cup
+# surrounds and backs the wheel, with only 0.3 mm of working clearance.
+wheel_y=-.004
+cut(body,cylinder('cut',(-.044,wheel_y,.025),.0061,.008,0,'X'))
+wheel_cup=cylinder('side_buttons',(-.0438,wheel_y,.025),.0067,.0026,.00018,'X')
+cut(wheel_cup,cylinder('cut',(-.045,wheel_y,.025),.0059,.0032,0,'X'))
+join([housing,wheel_cup],'side_buttons')
+# A directly modelled knurled rim avoids boolean sliver faces on the old dial.
+verts=[]
+for x in [-.0454,-.0435]:
+    for i in range(64):
+        a=i*math.tau/64
+        r=.0056 if i%4 in [1,2] else .00535
+        verts.append((x,wheel_y+math.cos(a)*r,.025+math.sin(a)*r))
+faces=[tuple(range(63,-1,-1)),tuple(range(64,128))]
+faces += [(i,(i+1)%64,(i+1)%64+64,i+64) for i in range(64)]
+mesh=bpy.data.meshes.new('volume_wheel_geometry')
+mesh.from_pydata(verts,[],faces); mesh.update()
+wheel=bpy.data.objects.new('volume_wheel',mesh); scene.collection.objects.link(wheel)
+finish(wheel,'volume_wheel',.00012,2)
 # Circular headphone jack with a blind dark socket; positioned low on the right.
 cut(body,cylinder('cut',(.044,-.001,-.046),.0028,.01,0,'X',32))
-port=ring('accessory_port',(.0437,-.001,-.046),.0027,.0018,.003,'X')
+port=ring('accessory_port',(.0437,-.001,-.046),.0032,.0018,.003,'X')
 plug=cylinder('accessory_port',(.0421,-.001,-.046),.0018,.0004,0,'X',24)
 join([port,plug],'accessory_port')
 
@@ -294,7 +323,9 @@ for x in [-.033,.033]:
     for z in [-.057,.057]:
         rear=bpy.data.objects['back_panel']
         cut(rear,cylinder('cut',(x,.014,z),.0027,.005,0))
-        screw_wells.append(ring('screw_wells',(x,.0133,z),.00265,.00205,.0012))
+        well=cylinder('screw_wells',(x,.01295,z),.0028,.0019,.0001,vertices=24)
+        cut(well,cylinder('cut',(x,.0136,z),.00205,.002,0,vertices=24))
+        screw_wells.append(well)
         screw=cylinder('screws',(x,.0136,z),.0019,.0011,.00025,vertices=24)
         for dims in [(.0026,.001,.0005),(.0005,.001,.0026)]:
             cut(screw,box('cut',(x,.01415,z),dims,.00008))
@@ -367,6 +398,11 @@ for x in [.014,.017,.020]:
 # tessellation across perforated faces. No subdivision modifiers or texture payload.
 objects=[o for o in scene.objects if o.type=='MESH']
 for obj in objects:
+    bm=bmesh.new(); bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=1e-7)
+    bmesh.ops.dissolve_degenerate(bm,edges=list(bm.edges),dist=1e-8)
+    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+    bm.to_mesh(obj.data); bm.free()
     normals(obj)
     activate(obj)
     tri=obj.modifiers.new('Stable triangulation','TRIANGULATE')
@@ -425,6 +461,7 @@ scene.render.resolution_y=1000
 scene.render.resolution_percentage=100
 scene.render.image_settings.file_format='PNG'
 bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'scripts/retro-handheld.blend'))
+if '--skip-previews' in sys.argv: sys.exit(0)
 scene.render.filepath=str(ROOT/'scripts/retro-handheld-preview.png')
 bpy.ops.render.render(write_still=True)
 camera.location=(-.20,.38,.17)

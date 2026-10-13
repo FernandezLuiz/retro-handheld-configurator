@@ -79,6 +79,12 @@
       "status": "added"
     },
     {
+      "mesh": "volume_wheel",
+      "material": "volume_wheel_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
       "mesh": "internal_pcb",
       "material": "internal_pcb_material",
       "slots": 1,
@@ -157,12 +163,6 @@
       "status": "added"
     },
     {
-      "mesh": "volume_wheel",
-      "material": "volume_wheel_material",
-      "slots": 1,
-      "status": "added"
-    },
-    {
       "mesh": "accessory_port",
       "material": "accessory_port_material",
       "slots": 1,
@@ -223,12 +223,12 @@
       "status": "added"
     }
   ],
-  "triangles": 35378,
+  "triangles": 36378,
   "dimensionsMeters": [
-    0.09060000255703926,
+    0.09139999747276306,
     0.14800000190734863,
-    0.03265000134706497
+    0.03240000084042549
   ],
-  "bytes": 1064516,
+  "bytes": 1070020,
   "validation": "GLTFLoader parse and all 20 previous mesh names preserved. See npm test and npm run test:browser for control and UI validation."
 }

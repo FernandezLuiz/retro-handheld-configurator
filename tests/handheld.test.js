@@ -183,3 +183,41 @@ test('Atomic uses wall-scale refraction without a double-sided transmission pass
   }
   assert.equal(meshes.screen_glass.material.side, THREE.FrontSide)
 })
+
+test('assembly reveals have backing instead of open sightlines into the room', async () => {
+  const { scene, meshes } = await fixture()
+  scene.updateMatrixWorld(true)
+  const center = new THREE.Box3().setFromObject(meshes.body).getCenter(new THREE.Vector3())
+  // Source coordinates are metres in Blender: X width, Y depth, Z height.
+  const point = (x, depth, height) => new THREE.Vector3(x + center.x, height + center.y, -depth + center.z - .0054)
+  const exterior = Object.values(meshes).filter(mesh => !mesh.name.startsWith('internal_'))
+  const checks = [
+    ['door side reveal', point(.0313, .05, -.010), [0, 0, 1], 'back_panel'],
+    ['door upper reveal', point(0, .05, .0328), [0, 0, 1], 'back_panel'],
+    ['latch recess', point(.008, .05, -.048), [0, 0, 1], 'back_panel'],
+    ['power housing edge', point(.07, -.0068, .029), [-1, 0, 0], 'side_buttons'],
+    ['wheel clearance', point(-.07, .00175, .025), [1, 0, 0], 'side_buttons'],
+    ['shell joint', point(.07, .0035, 0), [-1, 0, 0], 'shell_seam'],
+    ['front gasket seat', point(.07, .00325, 0), [-1, 0, 0], 'shell_seam'],
+    ['rear gasket seat', point(.07, .00375, 0), [-1, 0, 0], 'shell_seam'],
+    ['action button clearance', point(.0352, -.05, -.016), [0, 0, -1], 'control_wells'],
+  ]
+  for (const [label, origin, direction, expected] of checks) {
+    const hits = new THREE.Raycaster(origin, new THREE.Vector3(...direction)).intersectObjects(exterior, false)
+    assert.equal(hits[0]?.object.name, expected, label)
+    assert.ok(hits[0].distance < .04, `${label}: backing must be at the near wall`)
+  }
+})
+
+test('button backing leaves room for the existing tactile press and D-pad tilt', async () => {
+  const { scene, meshes } = await fixture()
+  scene.updateMatrixWorld(true)
+  for (const name of ['button_a', 'button_b', 'dpad', 'start_button', 'select_button']) {
+    const box = new THREE.Box3().setFromObject(meshes[name])
+    const origin = box.getCenter(new THREE.Vector3()); origin.z = .1
+    const floor = new THREE.Raycaster(origin, new THREE.Vector3(0, 0, -1)).intersectObject(meshes.control_wells)[0]
+    assert.ok(floor, `${name}: closed control cup`)
+    const travel = name === 'dpad' ? .00075 : .00065
+    assert.ok(box.min.z - floor.point.z > travel, `${name}: clearance while pressed`)
+  }
+})
