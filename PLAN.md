@@ -275,27 +275,26 @@ Follow the visual direction documented in the moodboard.
 
 ## Current status
 
-The main configurator is already working.
+The configurator is implemented and deployed on Vercel, with source tracked in Git/GitHub.
 
 Completed:
-- custom 3D handheld
-- multiple configurable properties
-- multiple materials
-- translucent internals
-- four 3D environments
-- edition presets
-- camera controls
-- visual identity
-- Play Mode
-- multiple playable games
-- moodboard
+- custom 3D handheld with refined geometry, closed shell assembly and physical pressable controls
+- independent Body / Buttons / D-pad / Screen customisation
+- Matte / Glossy / Translucent materials and visible internal electronics
+- Edition presets independent of Scene selection
+- four environments, with Arcade as the default
+- OrbitControls, zoom, Reset and loading/fallback behaviour
+- Play Mode with Vector Field and a Space Invaders-inspired game
+- keyboard and mouse/touch controls, including physical 3D control feedback during gameplay
+- handheld-visible gameplay, game library and exit/state restoration
+- desktop and mobile behaviour, plus reduced-motion support
+- automated unit and Playwright browser tests
+- visual direction and moodboard Take/Ignore notes
+- final README and AI process documentation; portable Playwright browser setup
 
-Still to review:
-- responsive/mobile behaviour
-- final visual polish
-- usability
-- final testing
-- documentation
+Remaining submission items:
+- recover final moodboard source information where possible; retain honest unknown attribution otherwise
+- optional original project naming polish
 
 ## Audience
 
@@ -334,23 +333,14 @@ Any external assets added later should have a licence that allows their use in t
 
 ### Open questions
 
-- Final original project name
-- Final polish before submission
+- Optional final original project name
+- Sources/creators of saved moodboard references currently marked unknown
 
 ### Next action
 
-Prepare the project for the design review.
+Complete the final submission review: check the documentation and links, record the latest unit/browser/build results, and recover any available moodboard attribution. The documentation cleanup is complete; optional naming polish remains a separate decision.
 
-Compare the live configurator directly with the moodboard and identify specific visual differences that still need refinement.
-
-Priorities:
-- final Arcade environment polish
-- visual consistency
-- usability
-- final original project naming
-- complete moodboard source information
-
-Make only focused changes and keep the current working version stable.
+Preserve the current implementation. No redesign or further feature work is required for this handover.
 
 ## Development steps
 

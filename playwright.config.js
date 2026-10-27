@@ -9,7 +9,6 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5174',
     viewport: { width: 1440, height: 1000 },
     launchOptions: {
-      executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
       args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
     },
   },

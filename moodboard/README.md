@@ -13,7 +13,7 @@ The references are used for specific visual qualities only. Their branding, prod
 **Take:** playful product presentation, bold simple shapes and a fun retro-tech feeling.  
 **Ignore:** the exact yellow colour, product design and Playdate branding.
 
-**Source:** [add source URL]  
+**Source:** Unknown / saved visual reference\
 **Creator / brand:** Panic / Playdate  
 **Usage:** visual reference only
 
@@ -24,8 +24,8 @@ The references are used for specific visual qualities only. Their branding, prod
 **Take:** purple and cyan lighting, dark atmosphere and a strong arcade mood.  
 **Ignore:** specific machines, logos and existing game artwork.
 
-**Source:** [add source URL]  
-**Creator / brand:** [add if known]  
+**Source:** Unknown / saved visual reference\
+**Creator / brand:** Unknown\
 **Usage:** visual reference only
 
 ---
@@ -35,8 +35,8 @@ The references are used for specific visual qualities only. Their branding, prod
 **Take:** depth, multiple glowing screens and layered neon lighting.  
 **Ignore:** the exact room layout, machines and branding.
 
-**Source:** [add source URL]  
-**Creator / brand:** [add if known]  
+**Source:** Unknown / saved visual reference\
+**Creator / brand:** Unknown\
 **Usage:** visual reference only
 
 ---
@@ -46,8 +46,8 @@ The references are used for specific visual qualities only. Their branding, prod
 **Take:** frosted transparent plastic, visible internal components and soft reflections.  
 **Ignore:** the exact product shape and branding.
 
-**Source:** [add source URL]  
-**Creator / brand:** [add if known]  
+**Source:** Unknown / saved visual reference\
+**Creator / brand:** Unknown\
 **Usage:** visual reference only
 
 ---
@@ -57,8 +57,8 @@ The references are used for specific visual qualities only. Their branding, prod
 **Take:** warm dark desk atmosphere, subtle lighting and premium tech presentation.  
 **Ignore:** the specific furniture, devices and monitor setup.
 
-**Source:** [add source URL]  
-**Creator / brand:** [add if known]  
+**Source:** Unknown / saved visual reference\
+**Creator / brand:** Unknown\
 **Usage:** visual reference only
 
 ---
@@ -68,8 +68,8 @@ The references are used for specific visual qualities only. Their branding, prod
 **Take:** warm wood tones, simple retro furniture and a calm mid-century workspace.  
 **Ignore:** the exact furniture and desk layout.
 
-**Source:** [add source URL]  
-**Creator / brand:** [add if known]  
+**Source:** Unknown / saved visual reference\
+**Creator / brand:** Unknown\
 **Usage:** visual reference only
 
 ---
@@ -79,8 +79,8 @@ The references are used for specific visual qualities only. Their branding, prod
 **Take:** monochrome retro graphic language, grid structure and technical print-like styling.  
 **Ignore:** the exact text content and page layout.
 
-**Source:** [add source URL]  
-**Creator / brand:** [add if known]  
+**Source:** Unknown / saved visual reference\
+**Creator / brand:** Unknown\
 **Usage:** visual reference only
 
 ---
@@ -90,8 +90,8 @@ The references are used for specific visual qualities only. Their branding, prod
 **Take:** bold oversized typography, playful scale and strong graphic hierarchy.  
 **Ignore:** the exact words, colours and poster composition.
 
-**Source:** [add source URL]  
-**Creator / brand:** [add if known]  
+**Source:** Unknown / saved visual reference\
+**Creator / brand:** Unknown\
 **Usage:** visual reference only
 
 ---
@@ -284,7 +284,7 @@ Visible internal components are part of the visual identity of the translucent e
 
 ## Studio
 
-The default Studio scene uses soft and controlled product lighting.
+The Studio scene uses soft and controlled product lighting.
 
 The lighting should:
 - clearly reveal the form of the handheld
@@ -301,7 +301,7 @@ The goal is to create a comfortable nostalgic workspace with warm wood and soft 
 
 ## Arcade
 
-The Arcade scene uses stronger atmospheric lighting with cyan, purple and pink accents.
+Arcade is the default scene. It uses stronger atmospheric lighting with cyan, purple and pink accents.
 
 Glowing screens and neon lighting can create more contrast than in the Studio environment.
 
