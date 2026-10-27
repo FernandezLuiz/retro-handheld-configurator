@@ -3,7 +3,7 @@ import * as THREE from 'three'
 const actions = { button_a: 'action', button_b: 'boost', start_button: 'start', select_button: 'select' }
 
 // Owns only the controls' temporary transforms. Uses the viewer's existing clock.
-export function createButtonInteraction({ element, camera, controls, available, reducedMotion, onInteraction }) {
+export function createButtonInteraction({ element, camera, controls, available, reducedMotion, onInteraction, onAction = () => {} }) {
   const lifetime = new AbortController()
   const raycaster = new THREE.Raycaster()
   const ndc = new THREE.Vector2()
@@ -33,7 +33,9 @@ export function createButtonInteraction({ element, camera, controls, available, 
   function release(event) {
     if (!pointers.has(event.pointerId)) return
     onInteraction()
+    const released = pointers.get(event.pointerId)
     pointers.delete(event.pointerId)
+    onAction(event.pointerId, released.action, false)
     if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId)
     if (!pointers.size) controls.enabled = orbitWasEnabled
     element.style.cursor = ''
@@ -61,6 +63,7 @@ export function createButtonInteraction({ element, camera, controls, available, 
     target.entry.until = performance.now() + (reducedMotion.matches ? 0 : 90)
     target.entry.action = target.action
     pointers.set(event.pointerId, target)
+    onAction(event.pointerId, target.action, true)
     element.setPointerCapture(event.pointerId)
     element.style.cursor = 'pointer'
     update(1 / 60)
@@ -107,6 +110,7 @@ export function createButtonInteraction({ element, camera, controls, available, 
       }).filter(Boolean)
     },
     update, clear,
+    pulse(action) { const entry = entries.find(item => actions[item.mesh.name] === action); if (entry) { entry.action = action; entry.until = performance.now() + 160 } },
     setKeys(value) { keys = new Set(value); update(1 / 60) },
     get active() { return pointers.size > 0 },
     inspect() { return entries.map(({ mesh }) => ({ name: mesh.name, position: mesh.position.toArray(), quaternion: mesh.quaternion.toArray() })) },

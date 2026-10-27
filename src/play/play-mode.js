@@ -9,6 +9,8 @@ export function createPlayMode(viewer, app, button) {
   let selectedGame = 'vector'
   let surface = surfaces[selectedGame]
   viewer.setScreenTexture(surface.texture)
+  const viewport = app.querySelector('.viewport')
+  const anchor = document.createComment('viewer position')
   const overlay = document.createElement('section')
   overlay.className = 'play-overlay'
   overlay.hidden = true
@@ -54,15 +56,16 @@ export function createPlayMode(viewer, app, button) {
   let focusBefore = null, previousOverflow = '', previousPadding = ''
   const pressed = new Map()
   const keys = new Set()
+  const physicalTaps = new Set()
   function syncKeys() {
     keys.clear()
     for (const action of pressed.values()) keys.add(action)
     viewer.setButtonFeedback(keys)
   }
-  function clearKeys() { pressed.clear(); syncKeys() }
+  function clearKeys() { pressed.clear(); physicalTaps.clear(); syncKeys() }
   function restart() {
     if (phase !== 'playing') return
-    clearKeys(); surface.game.restart(); accumulator = 0; surface.draw()
+    clearKeys(); viewer.clearButtons(); viewer.pulseStart(); surface.game.restart(); accumulator = 0; surface.draw()
     message.textContent = ''
     overlay.focus({ preventScroll: true })
   }
@@ -78,12 +81,12 @@ export function createPlayMode(viewer, app, button) {
     for (const direction of ['left', 'right']) overlay.querySelector(`[data-key="${direction}"]`).setAttribute('aria-label', `${name === 'vector' ? 'Rotate' : 'Move'} ${direction}`)
     overlay.dataset.currentGame = name
     phase = 'playing'; overlay.dataset.phase = phase
-    surface.game.restart(); surface.draw(); accumulator = paintTime = 0
+    viewer.pulseStart(); surface.game.restart(); surface.draw(); accumulator = paintTime = 0
     message.textContent = name === 'vector' ? 'Rotate. Thrust. Clear the field.' : 'Move. Fire. Hold the line.'
     overlay.focus({ preventScroll: true })
   }
   function setPaused(value) {
-    paused = value; accumulator = 0; clearKeys(); surface.setPaused(value)
+    paused = value; accumulator = 0; clearKeys(); viewer.clearButtons(); surface.setPaused(value)
     if (phase === 'playing') message.textContent = value ? 'Paused — return to the game' : ''
   }
   function enter() {
@@ -104,6 +107,9 @@ export function createPlayMode(viewer, app, button) {
     overlay.dataset.phase = phase
     overlay.focus({ preventScroll: true })
     viewer.setPlayMode(true, reducedMotion.matches)
+    viewport.before(anchor)
+    overlay.prepend(viewport)
+    viewport.classList.add('play-product')
     keyboard = new AbortController()
     const signal = keyboard.signal
     window.addEventListener('keydown', event => {
@@ -139,6 +145,7 @@ export function createPlayMode(viewer, app, button) {
     phase = 'exiting'
     overlay.dataset.phase = phase
     clearKeys()
+    viewer.clearButtons()
     viewer.setPlayMode(false, reducedMotion.matches)
     // The game is frozen during the return journey; its last frame remains visible.
   }
@@ -148,6 +155,9 @@ export function createPlayMode(viewer, app, button) {
     paused = false
     surface.game.idle(); surface.setPaused(false)
     phase = 'idle'
+    viewer.preserveCameraOnResize()
+    viewport.classList.remove('play-product')
+    anchor.replaceWith(viewport)
     overlay.hidden = true
     document.body.classList.remove('in-play-mode')
     document.body.style.overflow = previousOverflow
@@ -182,7 +192,12 @@ export function createPlayMode(viewer, app, button) {
     if (phase === 'exiting' && progress === 0) { finishExit(); return }
     if (phase !== 'playing' || paused) return
     accumulator += dt; paintTime += dt
-    while (accumulator >= 1 / 120) { surface.game.step(1 / 120, keys); accumulator -= 1 / 120 }
+    while (accumulator >= 1 / 120) {
+      // A quick click can begin and end between frames; consume it once.
+      surface.game.step(1 / 120, physicalTaps.size ? new Set([...keys, ...physicalTaps]) : keys)
+      physicalTaps.clear()
+      accumulator -= 1 / 120
+    }
     if (paintTime >= 1 / 60) {
       paintTime %= 1 / 60
       surface.draw()
@@ -204,6 +219,13 @@ export function createPlayMode(viewer, app, button) {
   for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) overlay.addEventListener(name, event => {
     pressed.delete(`pointer:${event.pointerId}`); syncKeys()
   }, { signal: lifetime.signal })
+  viewer.setPhysicalInput((id, action, down) => {
+    const source = `physical:${id}`
+    if (!down) { pressed.delete(source); syncKeys(); return }
+    if (phase !== 'playing' || paused) return
+    if (action === 'start' || (action === 'action' && surface.game.state.phase === 'over')) { restart(); return }
+    if (Object.values(bindings[selectedGame]).includes(action)) { pressed.set(source, action); physicalTaps.add(action); syncKeys() }
+  })
   viewer.setFrameHandler(update, () => ({ phase, selectedGame, theme: surface.theme, keyboardActive: Boolean(keyboard), pressed: [...keys], game: structuredClone(surface.game.state) }))
   return {
     get active() { return phase !== 'idle' },
@@ -211,6 +233,7 @@ export function createPlayMode(viewer, app, button) {
     dispose() {
       lifetime.abort(); keyboard?.abort()
       if (phase !== 'idle') finishExit()
+      viewer.setPhysicalInput(null)
       viewer.setFrameHandler(null, null)
       overlay.remove()
       Object.values(surfaces).forEach(item => { if (item !== surface) item.texture.dispose() })

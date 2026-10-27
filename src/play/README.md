@@ -17,13 +17,13 @@ independence are preserved.
 | Space / Z on Game Over | Retry |
 | Escape or Exit Game | Return to the saved configurator view |
 
-Touch controls provide rotation, thrust, fire and boost. There is no reverse
+The visible physical D-pad and A/B buttons provide rotation, thrust, fire and boost. There is no reverse
 thrust. Keyboard listeners exist only during a Play session. Blur/visibility
 changes pause simulation and clear held inputs. Focus returns to PLAY on exit.
 
 Space Invaders uses Left / A and Right / D to move, Space / Z to fire,
 R or Restart to restart, and Escape or Exit Game to leave. Space / Z also
-restarts after Game Over. Its touch controls are labelled Move left/right and Fire.
+restarts after Game Over. Its physical D-pad moves left/right and A fires.
 
 `controls.js` defines the actual bindings and generates the game library and
 in-game instructions from the same data. Selecting a library entry starts the game;
@@ -32,8 +32,10 @@ keyboard users can focus an entry and press Enter or Space.
 Outside Play Mode, the model's A/B, D-pad and Start/Select meshes can be pressed
 with a mouse or touch. A press temporarily owns the pointer instead of starting
 an orbit drag, and releases back to the exact original transform. Play Mode's
-full-screen game covers those meshes, so gameplay retains the keyboard and
-on-screen touch controls. Keyboard/touch actions still animate the 3D controls.
+camera frames the entire handheld, and those same meshes control the game.
+Keyboard and physical pointer sources are combined independently, so releasing
+one source does not release another held source. Start restarts the run;
+confirmation and restart briefly pulse Start. Select has no gameplay action.
 
 ## Existing implementation
 
@@ -60,12 +62,14 @@ on-screen touch controls. Keyboard/touch actions still animate the 3D controls.
   focus handling, touch input and tactile feedback bridge. Button A reflects
   fire; button B reflects boost. `scene/button-interaction.js` owns the temporary
   mesh transforms and physical pointer input within the existing render loop.
-- `play.css`: existing overlay layout, with smooth vector-canvas sampling.
+- `play.css`: lightweight OS header, status and hints around the live 3D product.
 
 The original viewer owns the only animation loop. Simulation advances in 120 Hz
 fixed steps; canvas painting targets 60 Hz. The same CanvasTexture remains on the
-actual screen mesh, using the GLB's existing UV orientation. Covered 3D rendering
-is skipped while the opaque game overlay is fully open and resumes on exit.
+actual screen mesh, using the GLB's existing UV orientation. The 3D renderer
+continues throughout gameplay. The viewport is temporarily moved into the modal
+and restored to its original location on exit. Camera framing reserves space for
+the OS controls, while temporary display-glare adjustments restore on exit.
 The viewer owns texture disposal. No external art or audio assets are required;
 optional procedural audio has not been added.
 

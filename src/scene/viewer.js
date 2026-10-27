@@ -85,17 +85,19 @@ export function createViewer(container) {
   let playInspector = null
   let screenTexture = null
   let previousTime = null
-  let coveredLastFrame = false
+  let physicalInput = null
+  let restoreResize = false
   let playProgress = 0
   let playDestination = 0
   let playDuration = 1.25
-  let reducedPlayMotion = false
   let savedView = null
   let screenFocus = null
   let screenDistance = 1
+  const playSize = new THREE.Vector3()
   const buttonInteraction = createButtonInteraction({
     element: renderer.domElement, camera, controls, reducedMotion,
-    available: () => !savedView && !disposed,
+    available: () => !disposed && (!savedView || (playProgress === 1 && playDestination === 1)),
+    onAction: (...args) => physicalInput?.(...args),
     onInteraction: stopAttract,
   })
 
@@ -103,6 +105,9 @@ export function createViewer(container) {
     if (!savedView) return
     playProgress = THREE.MathUtils.clamp(playProgress + (playDestination ? 1 : -1) * dt / playDuration, 0, 1)
     const t = playProgress * playProgress * (3 - 2 * playProgress)
+    const size = playSize
+    const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+    screenDistance = Math.max(size.y / (2 * tangent), size.x / (2 * tangent * camera.aspect)) * Math.max(1.35, container.clientHeight / Math.max(120, container.clientHeight - 220)) + size.z / 2
     const target = savedView.target.clone().lerp(screenFocus, t)
     const offset = savedView.position.clone().sub(savedView.target)
     const direction = offset.clone().normalize()
@@ -111,14 +116,13 @@ export function createViewer(container) {
     const travel = new THREE.Quaternion().slerp(rotation, Math.min(1, t / 0.65))
     direction.applyQuaternion(travel)
     const distance = THREE.MathUtils.lerp(offset.length(), screenDistance, t * t)
-    if (!reducedPlayMotion) {
-      camera.position.copy(target).addScaledVector(direction, distance)
-      camera.lookAt(target)
-    } else {
-      camera.position.copy(savedView.position)
-      camera.quaternion.copy(savedView.quaternion)
+    camera.position.copy(target).addScaledVector(direction, distance)
+    camera.lookAt(target)
+    handheld.setScreenGlow(0.3 + t * 0.9)
+    // Reduce cover-glass glare only while playing; restore the selected product exactly.
+    for (const { material, values } of savedView.displayMaterials) for (const [key, value] of Object.entries(values)) {
+      material[key] = THREE.MathUtils.lerp(value, key === 'ior' ? 1 : 0, t)
     }
-    handheld.setScreenGlow(0.3 + t * 0.35)
     if (!playDestination && playProgress === 0) {
       camera.position.copy(savedView.position)
       camera.quaternion.copy(savedView.quaternion)
@@ -192,7 +196,8 @@ export function createViewer(container) {
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     renderer.setSize(width, height)
-    if (!savedView) frameModel(true)
+    if (!savedView && !restoreResize) frameModel(true)
+    restoreResize = false
   })
   resizeObserver.observe(container)
   renderer.setAnimationLoop(time => {
@@ -223,13 +228,8 @@ export function createViewer(container) {
     title.update(camera, playProgress, idleTime, reducedMotion.matches)
     frameHandler?.(dt)
     buttonInteraction.update(dt)
-    // The opaque game view covers the 3D canvas. Keep the one shared clock,
-    // but avoid an invisible full-resolution transmission pass every frame.
-    // The same live texture is uploaded again as soon as the exit begins.
-    const covered = playProgress === 1 && playDestination === 1
-    if (!covered) environment.update(dt, reducedMotion.matches)
-    if (!covered || !coveredLastFrame) renderer.render(scene, camera)
-    coveredLastFrame = covered
+    environment.update(dt, reducedMotion.matches)
+    renderer.render(scene, camera)
   })
 
   viewers.set(container, () => {
@@ -264,6 +264,10 @@ export function createViewer(container) {
     canPlay() { return Boolean(model.getObjectByName('screen')) && !disposed },
     setFrameHandler(handler, inspector) { frameHandler = handler; playInspector = inspector },
     setScreenTexture(texture) { screenTexture = texture; handheld.setScreenTexture(texture) },
+    setPhysicalInput(handler) { physicalInput = handler },
+    clearButtons() { buttonInteraction.clear() },
+    pulseStart() { buttonInteraction.pulse('start') },
+    preserveCameraOnResize() { restoreResize = true },
     setButtonFeedback: keys => buttonInteraction.setKeys(keys),
     get playProgress() { return playProgress },
     get attracting() { return attracting },
@@ -274,18 +278,18 @@ export function createViewer(container) {
         const screen = model.getObjectByName('screen')
         if (!screen) return false
         savedView = { position: camera.position.clone(), quaternion: camera.quaternion.clone(), target: controls.target.clone(), enabled: controls.enabled }
+        savedView.displayMaterials = ['screen', 'screen_glass'].map(name => model.getObjectByName(name)?.material).filter(Boolean).map(material => ({
+          material, values: Object.fromEntries(['ior', 'roughness', 'specularIntensity', 'envMapIntensity', 'clearcoat'].filter(key => typeof material[key] === 'number').map(key => [key, material[key]])),
+        }))
         // Flush residual orbit damping without changing the saved view.
         controls.enableDamping = false
         controls.update()
         controls.enableDamping = true
         controls.enabled = false
-        const bounds = new THREE.Box3().setFromObject(screen)
+        const bounds = new THREE.Box3().setFromObject(model)
         screenFocus = bounds.getCenter(new THREE.Vector3())
-        const size = bounds.getSize(new THREE.Vector3())
-        const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
-        screenDistance = Math.max(size.y / (2 * tangent), size.x / (2 * tangent * camera.aspect)) * 1.08
+        bounds.getSize(playSize)
       }
-      reducedPlayMotion = reducedMotion
       playDestination = playing ? 1 : 0
       playDuration = reducedMotion ? 0.18 : 1.25
       if (!playing) stopAttract()

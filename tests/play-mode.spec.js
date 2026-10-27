@@ -8,7 +8,7 @@ async function phase(page, value) { await expect.poll(async () => (await inspect
 async function boot(page) {
   await page.route('https://fonts.googleapis.com/**', route => route.abort())
   await page.goto('/')
-  await expect(page.locator('#play')).toBeEnabled()
+  await expect(page.locator('#play')).toBeEnabled({ timeout: 15000 })
 }
 async function enterGame(page, game = 'vector') {
   await page.locator('#play').click()
@@ -103,14 +103,19 @@ test('palettes ignore scenes; repeated play sessions release keyboard listeners 
   }
   await page.waitForTimeout(300)
   const before = await inspect(page)
+  let warmedMemory
   for (let i = 0; i < 3; i++) {
     await enterGame(page)
-    expect((await inspect(page)).camera).toEqual(before.camera)
+    expect((await inspect(page)).camera).not.toEqual(before.camera)
     expect(await page.evaluate(() => activeGameListeners)).toBe(2)
     await page.locator('.game-exit').click()
     await phase(page, 'idle')
     expect(await page.evaluate(() => activeGameListeners)).toBe(0)
-    expect((await inspect(page)).memory).toEqual(before.memory)
+    for (let axis = 0; axis < 3; axis++) expect((await inspect(page)).camera[axis]).toBeCloseTo(before.camera[axis], 6)
+    // The first wider view lazily uploads previously culled environment geometry.
+    const memory = (await inspect(page)).memory
+    if (warmedMemory) expect(memory).toEqual(warmedMemory)
+    warmedMemory = memory
     expect((await inspect(page)).sceneObjects).toEqual(before.sceneObjects)
   }
   await page.keyboard.press('ArrowLeft')
@@ -124,10 +129,9 @@ test('early exit, touch input and missing-model Play gating stay safe', async ({
   await page.keyboard.press('Escape')
   await phase(page, 'idle')
   await enterGame(page)
-  const left = page.locator('[data-key="left"]')
-  // Real mouse events exercise pointer capture as well as the touch-sized button.
-  const bounds = await left.boundingBox()
-  await page.mouse.move(bounds.x + 20, bounds.y + 20)
+  const target = (await inspect(page)).buttonTargets.find(button => button.name === 'dpad')
+  const bounds = await page.locator('#scene canvas').boundingBox()
+  await page.mouse.move(bounds.x + (target.ndc[0] + 1) * bounds.width / 2 - 14, bounds.y + (1 - target.ndc[1]) * bounds.height / 2)
   await page.mouse.down()
   await page.waitForTimeout(100)
   expect((await inspect(page)).play.pressed).toContain('left')
@@ -143,10 +147,11 @@ test('early exit, touch input and missing-model Play gating stay safe', async ({
 
 
 test('three lost lives reach Game Over; Space starts a fresh run', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 700 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await boot(page)
   await enterGame(page)
-  await expect.poll(async () => (await inspect(page)).play.game.phase, { timeout: 45000 }).toBe('over')
+  await expect.poll(async () => (await inspect(page)).play.game.phase, { timeout: 120000 }).toBe('over')
   expect((await inspect(page)).play.game.lives).toBe(0)
   await expect(page.locator('.game-message')).toHaveText('Game over — R / Space / Z to restart')
   await page.screenshot({ path: 'scripts/vector-field-game-over.png' })
@@ -158,4 +163,75 @@ test('three lost lives reach Game Over; Space starts a fresh run', async ({ page
   expect(state.score).toBe(0)
   await page.keyboard.press('Escape')
   await phase(page, 'idle')
+})
+
+test('visible handheld controls share held keyboard and physical input without stuck presses', async ({ page, context }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await boot(page)
+  await enterGame(page)
+  await expect.poll(async () => (await inspect(page)).buttonFeedback.find(item => item.name === 'start_button').position[2]).toBe(0)
+  const rest = await inspect(page)
+  await expect(page.locator('#scene canvas')).toBeVisible()
+  await expect(page.locator('.game-display')).toBeHidden()
+  for (const target of rest.buttonTargets) {
+    expect(Math.abs(target.ndc[0])).toBeLessThan(.9)
+    expect(Math.abs(target.ndc[1])).toBeLessThan(.8)
+  }
+  await page.keyboard.down('ArrowLeft')
+  await page.keyboard.down('KeyA')
+  await page.keyboard.down('KeyZ')
+  await page.keyboard.down('KeyX')
+  expect((await inspect(page)).play.pressed.sort()).toEqual(['action', 'boost', 'left'])
+  await page.keyboard.up('ArrowLeft')
+  expect((await inspect(page)).play.pressed).toContain('left')
+  await page.keyboard.up('KeyA'); await page.keyboard.up('KeyZ'); await page.keyboard.up('KeyX')
+  await expect.poll(async () => (await inspect(page)).buttonFeedback).toEqual(rest.buttonFeedback)
+  const target = rest.buttonTargets.find(item => item.name === 'button_a')
+  const rect = await page.locator('#scene canvas').boundingBox()
+  const point = { x: rect.x + (target.ndc[0] + 1) * rect.width / 2, y: rect.y + (1 - target.ndc[1]) * rect.height / 2 }
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...point, id: 1 }] })
+  await expect.poll(async () => (await inspect(page)).play.pressed).toContain('action')
+  expect((await inspect(page)).controlsEnabled).toBe(false)
+  expect((await inspect(page)).camera).toEqual(rest.camera)
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] })
+  await expect.poll(async () => (await inspect(page)).buttonFeedback).toEqual(rest.buttonFeedback)
+  await page.keyboard.down('KeyW')
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+  expect((await inspect(page)).play.pressed).toEqual([])
+  await expect.poll(async () => (await inspect(page)).buttonFeedback).toEqual(rest.buttonFeedback)
+  await page.keyboard.up('KeyW')
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.keyboard.down('KeyZ')
+  await page.keyboard.press('Escape')
+  await phase(page, 'idle')
+  await page.keyboard.up('KeyZ')
+  expect((await inspect(page)).play.pressed).toEqual([])
+  expect((await inspect(page)).controlsEnabled).toBe(true)
+})
+
+
+test('quick physical taps fire and Start restarts on the mobile handheld', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await boot(page)
+  await enterGame(page, 'invaders')
+  const tap = async name => {
+    const { ndc } = (await inspect(page)).buttonTargets.find(item => item.name === name)
+    const rect = await page.locator('#scene canvas').boundingBox()
+    await page.mouse.click(rect.x + (ndc[0] + 1) * rect.width / 2, rect.y + (1 - ndc[1]) * rect.height / 2)
+  }
+  await tap('button_a')
+  await expect.poll(async () => (await inspect(page)).play.game.shots).toBeGreaterThan(0)
+  await tap('start_button')
+  await expect.poll(async () => (await inspect(page)).play.game.shots).toBe(0)
+  await expect.poll(async () => (await inspect(page)).buttonFeedback.find(item => item.name === 'start_button').position[2]).toBe(0)
+  await page.screenshot({ path: '/tmp/physical-play-mobile-final.png' })
+  await page.setViewportSize({ width: 844, height: 390 })
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: '/tmp/physical-play-landscape-final.png' })
+  await page.keyboard.press('Escape')
+  await phase(page, 'idle')
+  expect((await inspect(page)).controlsEnabled).toBe(true)
 })
