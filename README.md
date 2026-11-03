@@ -1,6 +1,6 @@
-# Retro Handheld Configurator
+# GameBoy — Retro Handheld Configurator
 
-An experimental single-page 3D configurator: customise an original retro-inspired handheld, explore its environments and play games on its actual screen.
+An experimental single-page 3D configurator: customise GameBoy, an original retro-inspired handheld, explore its environments and play games on its actual screen.
 
 [Live project](https://retro-handheld-configurator.vercel.app) · [GitHub repository](https://github.com/FernandezLuiz/retro-handheld-configurator)
 

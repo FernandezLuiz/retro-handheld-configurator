@@ -29,10 +29,10 @@ export const palettes = {
   ],
 }
 export const scenes = {
-  Studio: { background: '#eeefea', glow: '#f7f8f3', key: '#ffffff', fill: '#e1e9d7', ground: '#8c9384', environment: 0.7, light: 2.6, dark: false },
+  Studio: { background: '#eeefea', glow: '#f7f8f3', key: '#ffffff', fill: '#e1e9d7', ground: '#8c9384', environment: 0.6, light: 2.1, dark: false },
   'Retro Desk': { background: '#d7c5ac', glow: '#f0e2c9', key: '#ffe3bc', fill: '#e8dac6', ground: '#8c7056', environment: 0.75, light: 2.8, dark: false },
-  Arcade: { background: '#130d25', glow: '#34204b', key: '#e5f5ff', fill: '#d88bdb', ground: '#3b2450', environment: 0.68, light: 2.9, dark: true },
-  'Dark Tech': { background: '#1f282c', glow: '#3a4a50', key: '#e6f4ff', fill: '#96b7b4', ground: '#384a4e', environment: 0.7, light: 3.0, dark: true },
+  Arcade: { background: '#130d25', glow: '#34204b', key: '#e5f5ff', fill: '#d88bdb', ground: '#3b2450', environment: 0.42, light: 2.9, dark: true },
+  'Dark Tech': { background: '#1f282c', glow: '#3a4a50', key: '#e6f4ff', fill: '#96b7b4', ground: '#384a4e', environment: 0.42, light: 3.0, dark: true },
 }
 export const editions = {
   Classic: { body: 'Warm grey', buttons: 'Burgundy', dpad: 'Charcoal', screen: 'Muted green', material: 'Matte' },
@@ -43,8 +43,8 @@ export const editions = {
 }
 export const defaults = { ...editions.Classic, scene: 'Arcade' }
 export const finishes = {
-  Matte: { roughness: 0.62, metalness: 0, clearcoat: 0, clearcoatRoughness: 0.3, transmission: 0, thickness: 0, ior: 1.46, envMapIntensity: 0.65, specularIntensity: 0.65 },
-  Glossy: { roughness: 0.19, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.09, transmission: 0, thickness: 0, ior: 1.46, envMapIntensity: 1, specularIntensity: 0.9 },
+  Matte: { roughness: 0.72, metalness: 0, clearcoat: 0, clearcoatRoughness: 0.3, transmission: 0, thickness: 0, ior: 1.46, envMapIntensity: 0.55, specularIntensity: 0.5 },
+  Glossy: { roughness: 0.19, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.16, transmission: 0, thickness: 0, ior: 1.46, envMapIntensity: 1, specularIntensity: 0.9 },
   // Thickness is measured in the GLB's meters, not the normalized viewer units.
   Translucent: { roughness: 0.25, metalness: 0, clearcoat: 0, clearcoatRoughness: 0.4, transmission: 0.78, thickness: 0.0025, ior: 1.46, envMapIntensity: 0.28, specularIntensity: 0.38 },
 }

@@ -12,7 +12,7 @@ export function createGameSurface() {
   const canvas = document.createElement('canvas')
   // Supersample the vector strokes; logical gameplay dimensions stay fixed.
   canvas.width = WIDTH * 2; canvas.height = HEIGHT * 2
-  canvas.setAttribute('aria-label', 'Gameboy Vector Field game screen')
+  canvas.setAttribute('aria-label', 'GameBoy Vector Field game screen')
   const ctx = canvas.getContext('2d', { alpha: false })
   const texture = new THREE.CanvasTexture(canvas)
   texture.name = 'form_os_live_canvas'

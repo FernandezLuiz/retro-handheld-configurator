@@ -23,7 +23,7 @@ document.querySelector('#app').innerHTML = `
       <div id="scene" class="scene"></div>
       <div class="viewport-footer">
         <div class="viewport-actions"><span class="eyebrow">YOUR NEXT DISTRACTION ↓</span><button type="button" id="play" class="play-launch" disabled><span aria-hidden="true">▶</span> ENTER GAME</button></div>
-        <div class="view-notes"><span class="view-hint">Drag to rotate<br>Scroll to zoom</span></div>
+        <div class="view-notes"><span class="view-hint"><span>Drag to rotate</span><br><span>Scroll to zoom</span></span></div>
       </div>
     </section>
     <aside class="sidebar" aria-labelledby="configurator-title">

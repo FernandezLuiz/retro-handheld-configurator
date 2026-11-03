@@ -30,7 +30,7 @@ Matte/Glossy hide the internals; other exterior materials remain unchanged.
 `src/configuration.js` defines palettes, finishes, four scene moods, and five
 product editions. Editions preserve the scene; scene changes preserve the
 selected edition. Individual product edits show Custom when no edition matches.
-Reset restores Classic, Studio, and the default camera.
+Reset restores Classic, Arcade, and the default camera.
 
 `src/scene/environment.js` uses a procedural room reflection map and restrained
 background/light presets without external HDR assets. Scene changes do not

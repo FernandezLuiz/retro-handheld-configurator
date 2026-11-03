@@ -2,7 +2,7 @@
 
 ## Project
 
-An experimental 3D retro handheld configurator built with Vite and Three.js.
+GameBoy is an original retro-inspired handheld presented in an experimental 3D configurator built with Vite and Three.js.
 
 The project lets the user customise a retro-inspired handheld console, inspect it in 3D, switch between different environments and enter Play Mode to play small retro-inspired games.
 
@@ -111,7 +111,7 @@ Syne ExtraBold
 
 Used for:
 - large headings
-- GAMEBOY title
+- GameBoy title
 - major graphic elements
 
 Body / UI:
@@ -294,7 +294,11 @@ Completed:
 
 Remaining submission items:
 - recover final moodboard source information where possible; retain honest unknown attribution otherwise
-- optional original project naming polish
+
+Latest verification (2026-11-03, uncommitted baseline):
+- `npm test`: 22 of 22 passed
+- `npm run test:browser`: 21 of 21 passed (software WebGL, not a native-GPU benchmark)
+- `npm run build`: succeeded, with Vite's non-failing advisory about the 745 kB JavaScript bundle
 
 ## Audience
 
@@ -324,7 +328,7 @@ Any external assets added later should have a licence that allows their use in t
 
 ### Decisions
 
-- The product is a retro-inspired handheld console.
+- The product is an original retro-inspired handheld console named GameBoy; its system branding is GameBoy OS.
 - The visual direction is playful, experimental and retro-tech.
 - Scene and Edition remain independent.
 - Translucent material remains an important feature.
@@ -333,14 +337,13 @@ Any external assets added later should have a licence that allows their use in t
 
 ### Open questions
 
-- Optional final original project name
 - Sources/creators of saved moodboard references currently marked unknown
 
 ### Next action
 
-Complete the final submission review: check the documentation and links, record the latest unit/browser/build results, and recover any available moodboard attribution. The documentation cleanup is complete; optional naming polish remains a separate decision.
+The baseline cleanup and GameBoy product naming are complete, but not yet committed. Next: the major visual redesign. Also recover any available moodboard attribution.
 
-Preserve the current implementation. No redesign or further feature work is required for this handover.
+Preserve working functionality during the redesign.
 
 ## Development steps
 

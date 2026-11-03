@@ -231,6 +231,14 @@ test('quick physical taps fire and Start restarts on the mobile handheld', async
   await page.setViewportSize({ width: 844, height: 390 })
   await page.waitForTimeout(300)
   await page.screenshot({ path: '/tmp/physical-play-landscape-final.png' })
+  // A short landscape viewport must keep the physical controls usable, not
+  // reserve most of its height for HUD whitespace.
+  const landscape = await inspect(page)
+  const dpad = landscape.buttonTargets.find(item => item.name === 'dpad')
+  const start = landscape.buttonTargets.find(item => item.name === 'start_button')
+  expect(Math.abs(dpad.ndc[1] - start.ndc[1]) * 390 / 2).toBeGreaterThan(30)
+  await tap('button_a')
+  await expect.poll(async () => (await inspect(page)).play.game.shots).toBeGreaterThan(0)
   await page.keyboard.press('Escape')
   await phase(page, 'idle')
   expect((await inspect(page)).controlsEnabled).toBe(true)

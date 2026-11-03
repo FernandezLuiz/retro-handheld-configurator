@@ -39,6 +39,17 @@ export function createHandheldController() {
         const part = Object.keys(MODEL_PARTS).find(part => MODEL_PARTS[part].includes(mesh.name))
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
         const clones = materials.map(original => {
+          if (mesh.name === 'screen_glass') {
+            // The LCD already has its own shaded surface. A low-glare cover
+            // avoids two strong reflections washing out the live OS texture.
+            const glass = original.clone()
+            glass.roughness = 0.025
+            glass.ior = 1.25
+            glass.specularIntensity = 0.35
+            glass.envMapIntensity = 0.3
+            replaced.add(original)
+            return glass
+          }
           if (!part) { retained.add(original); return original }
           // Keep maps and colors; body uses PhysicalMaterial for transmission/coating.
           const material = part === 'body' ? new THREE.MeshPhysicalMaterial() : original.clone()
@@ -55,6 +66,9 @@ export function createHandheldController() {
             material.depthWrite = true
           }
           if (part === 'screen') {
+            material.clearcoat = 0
+            material.envMapIntensity = 0.25
+            material.specularIntensity = 0.35
             if (screenTexture) { material.map = screenTexture; material.emissiveMap = screenTexture }
             else if (!material.map) material.map = createLCDTexture()
           }

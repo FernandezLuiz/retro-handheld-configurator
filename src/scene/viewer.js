@@ -107,7 +107,10 @@ export function createViewer(container) {
     const t = playProgress * playProgress * (3 - 2 * playProgress)
     const size = playSize
     const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
-    screenDistance = Math.max(size.y / (2 * tangent), size.x / (2 * tangent * camera.aspect)) * Math.max(1.35, container.clientHeight / Math.max(120, container.clientHeight - 220)) + size.z / 2
+    // Short landscape screens put commands in the side margins, reserving only
+    // a compact legend below the product rather than 220px of empty HUD space.
+    const hudReserve = container.clientHeight <= 520 && camera.aspect > 1.4 ? 96 : 220
+    screenDistance = Math.max(size.y / (2 * tangent), size.x / (2 * tangent * camera.aspect)) * Math.max(1.35, container.clientHeight / Math.max(120, container.clientHeight - hudReserve)) + size.z / 2
     const target = savedView.target.clone().lerp(screenFocus, t)
     const offset = savedView.position.clone().sub(savedView.target)
     const direction = offset.clone().normalize()
@@ -132,7 +135,7 @@ export function createViewer(container) {
     }
   }
 
-  const defaultDirection = new THREE.Vector3(0.14, 0.14, 1).normalize()
+  const defaultDirection = new THREE.Vector3(0.30, 0.14, 1).normalize()
 
   function frameModel(preserveView = false) {
     if (!framedRadius) return
@@ -142,9 +145,8 @@ export function createViewer(container) {
     const offset = camera.position.clone().sub(controls.target)
     const zoomRatio = preserveView && fitDistance ? offset.length() / fitDistance : 1
     const direction = preserveView ? offset.normalize() : defaultDirection
-    // On portrait viewports, reserve the upper grid row for the title and
-    // supporting information while keeping the product centered below it.
-    const layoutOffset = camera.aspect < 0.8 ? framedRadius * 0.16 : 0
+    // On portrait viewports, balance the title above and CTA below the product.
+    const layoutOffset = camera.aspect < 0.8 ? framedRadius * 0.04 : 0
     controls.target.set(0, layoutOffset, 0)
     controls.minDistance = framedRadius * 1.3
     // Keep the fitted product view as the furthest view, with a little extra
@@ -201,6 +203,9 @@ export function createViewer(container) {
   })
   resizeObserver.observe(container)
   renderer.setAnimationLoop(time => {
+    // Keep the one existing loop, but do no GPU/simulation work in hidden tabs.
+    // Reset the clock so returning cannot advance a transition by the hidden time.
+    if (document.hidden) { previousTime = null; return }
     const elapsed = previousTime === null ? 0 : Math.max(0, (time - previousTime) / 1000)
     const dt = Math.min(elapsed, 0.1)
     previousTime = time

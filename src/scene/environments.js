@@ -132,7 +132,7 @@ function studio(group) {
   // A quiet tonal sweep in the cove, without an extra transparent backdrop.
   const tones = []
   for (let i = 0; i < positions.length; i += 3) {
-    const tone = new THREE.Color('#e2e3de').lerp(new THREE.Color('#c3c7c2'), THREE.MathUtils.smoothstep(positions[i + 1], TOP, 7) * 0.55)
+    const tone = new THREE.Color('#c9cdc5').lerp(new THREE.Color('#a6afa5'), THREE.MathUtils.smoothstep(positions[i + 1], TOP, 7) * 0.55)
     tones.push(tone.r, tone.g, tone.b)
   }
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(tones, 3))
@@ -453,7 +453,7 @@ export function createEnvironmentGroup(name, preset) {
   group.name = `environment:${name}`
   group.userData.environment = true
   group.userData.safeOrbitRadius = SAFE_ORBIT_RADIUS
-  const ambient = new THREE.HemisphereLight('#ffffff', preset.ground, name === 'Studio' ? 0.85 : name === 'Retro Desk' ? 0.7 : 0.32)
+  const ambient = new THREE.HemisphereLight('#ffffff', preset.ground, name === 'Studio' ? 0.55 : name === 'Retro Desk' ? 0.7 : 0.18)
   // Focus the dark-room key on the product: unlike a directional light this
   // falls off before reaching cabinets/panels, so their practical lights read.
   const key = preset.dark
@@ -461,7 +461,7 @@ export function createEnvironmentGroup(name, preset) {
     : new THREE.DirectionalLight(preset.key, preset.light)
   key.name = 'product_key'
   key.position.set(3, 5, 4)
-  const fill = new THREE.DirectionalLight(preset.fill, name === 'Studio' ? 0.72 : 0.48)
+  const fill = new THREE.DirectionalLight(preset.fill, name === 'Studio' ? 0.5 : preset.dark ? 0.24 : 0.48)
   fill.position.set(-4, 2, 3)
   const rim = new THREE.DirectionalLight(name === 'Dark Tech' ? '#b6d6df' : preset.fill, name === 'Studio' ? 0.6 : 1.1)
   rim.position.set(-3, 3, -4)

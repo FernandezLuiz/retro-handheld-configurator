@@ -6,7 +6,7 @@ import { gameThemes } from './surface.js'
 export function createSpaceInvadersSurface() {
   const canvas = document.createElement('canvas')
   canvas.width = WIDTH * 2; canvas.height = HEIGHT * 2
-  canvas.setAttribute('aria-label', 'Gameboy Space Invaders game screen')
+  canvas.setAttribute('aria-label', 'GameBoy Space Invaders game screen')
   const ctx = canvas.getContext('2d', { alpha: false })
   const texture = new THREE.CanvasTexture(canvas)
   texture.name = 'space_invaders_live_canvas'

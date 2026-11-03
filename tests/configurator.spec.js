@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test'
 import { defaults, editions, palettes, scenes } from '../src/configuration.js'
 
 test('all controls, editions, scenes, rotation and Reset work in the browser', async ({ page }) => {
+  // Only this full palette sweep exceeds the suite limit on software WebGL (about 115 s).
+  test.setTimeout(180_000)
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   page.on('console', message => { if (message.type() === 'error' && !message.text().includes('fonts.googleapis')) errors.push(message.text()) })

@@ -190,7 +190,7 @@ The palette should feel playful and nostalgic without becoming a direct recreati
 
 Used for:
 - main titles
-- large GAMEBOY title
+- large GameBoy title
 - graphic statements
 - important visual moments
 

@@ -193,3 +193,12 @@
   .play-overlay kbd { font-size: 9px; }
 }
 @media (prefers-reduced-motion: reduce) { .play-overlay .game-exit, .play-overlay .game-restart { transition: none; } }
+
+/* Landscape uses side-mounted OS commands so the physical screen can stay large. */
+@media (max-height: 520px) and (min-width: 701px) {
+  .play-overlay:not([data-phase='selecting']) .game-shell { inset: 12px 16px; }
+  .play-overlay:not([data-phase='selecting']) .game-header > div { max-width: 220px; }
+  .play-overlay:not([data-phase='selecting']) .game-header h2 { font-size: 17px; }
+  .play-overlay:not([data-phase='selecting']) .game-message { display: none; }
+  .play-overlay:not([data-phase='selecting']) .game-hints { margin-top: 8px; padding: 6px 10px; }
+}

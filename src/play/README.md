@@ -82,8 +82,8 @@ preserves the working gameplay code and updates this documentation.
 
 Verification commands:
 
-- `npm test`: 19 unit tests covering game mechanics and the existing product.
-- `npx playwright test`: 12 Chrome checks covering the configurator, four scenes,
+- `npm test`: 22 unit tests covering game mechanics and the existing product.
+- `npm run test:browser`: 21 Playwright checks covering the configurator, four scenes,
   Play transitions/restoration, rotation/thrust/fire/boost, tactile feedback,
   palette pixels, repeated-session listener/resource counts, mobile input,
   missing-model fallback, and Game Over/Space retry.

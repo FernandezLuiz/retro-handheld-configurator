@@ -18,7 +18,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #5653dc; outline-offs
 .viewport { --viewer-pad: var(--space-4); position: sticky; isolation: isolate; top: var(--space-4); margin-top: var(--space-2); align-self: start; height: max(720px, calc(100svh - 64px)); min-width: 0; padding: var(--viewer-pad); display: grid; grid-template-rows: 152px minmax(0, 1fr) auto; row-gap: var(--space-3); overflow: hidden; background: #eeefea; }
 .viewport::before, .viewport::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
 .viewport::before { z-index: 1; opacity: .18; background: radial-gradient(circle at 48% 42%, #ffffff6b 0, #ffffff00 38%); animation: ambient-breathe 9s ease-in-out infinite alternate; }
-.viewport::after { z-index: 2; opacity: .055; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E"); mix-blend-mode: multiply; animation: grain-drift .8s steps(2) infinite; }
+.viewport::after { z-index: 2; opacity: .055; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E"); mix-blend-mode: multiply;  }
 .scene { position: absolute; z-index: 0; inset: 0; }
 .scene canvas { display: block; touch-action: none; cursor: grab; }
 .scene canvas:active { cursor: grabbing; }
@@ -29,7 +29,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #5653dc; outline-offs
 
 .viewport-footer { position: relative; z-index: 3; grid-row: 3; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-4); pointer-events: none; }
 .viewport-actions { display: grid; justify-items: start; gap: 12px; }
-.viewport .play-launch { pointer-events: auto; position: relative; overflow: hidden; padding: 17px 22px; background: var(--acid); color: var(--ink); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); font-family: 'Syne', sans-serif; font-size: 21px; font-weight: 800; letter-spacing: -.6px; transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease; animation: cta-breathe 2.8s ease-in-out infinite; }
+.viewport .play-launch { pointer-events: auto; position: relative; overflow: hidden; padding: 17px 22px; background: var(--acid); color: var(--ink); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); font-family: 'Syne', sans-serif; font-size: 21px; font-weight: 800; letter-spacing: -.6px; transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease; animation: cta-breathe 3.8s ease-in-out 3; }
 .play-launch span { margin-right: var(--space-1); font-size: 16px; }
 .play-launch::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; top: -8px; background: #20221e44; pointer-events: none; }
 .play-launch:hover:not(:disabled)::after { animation: scan .35s steps(7) both; }
@@ -56,14 +56,14 @@ h2 { margin: 0; font-size: 15px; font-weight: 600; }
 .scene-buttons svg { display: block; width: 100%; height: 76px; object-fit: cover; transition: transform .35s ease, filter .25s ease; }
 .scene-name { position: relative; z-index: 2; display: block; padding: 10px 12px; font-size: 13px; font-weight: 600; }
 .selected-tag { display: none; position: absolute; z-index: 3; right: 4px; top: 4px; padding: 3px 5px; background: var(--acid); color: var(--ink); font-size: 9px; font-weight: 600; letter-spacing: .6px; }
-.scene-buttons [aria-pressed='true'] { border-color: var(--ink); box-shadow: 3px 3px 0 var(--ink); animation: selected-card 3.4s ease-in-out infinite; }
+.scene-buttons [aria-pressed='true'] { border-color: var(--ink); box-shadow: 3px 3px 0 var(--ink);  }
 .scene-buttons [aria-pressed='true'] .selected-tag { display: block; }
 .scene-buttons button:hover { z-index: 4; border-color: var(--ink); filter: brightness(1.04) saturate(1.04); transform: translateY(-2px); }
 .scene-buttons button:hover svg { transform: scale(1.025); }
-.scene-buttons button[data-value='Studio']::before { opacity: .34; animation: thumbnail-sweep 6s ease-in-out infinite; }
-.scene-buttons button[data-value='Retro Desk'] svg { animation: desk-glow 5s ease-in-out infinite; }
-.scene-buttons button[data-value='Arcade'] svg { animation: arcade-flicker 4.8s steps(1, end) infinite; }
-.scene-buttons button[data-value='Dark Tech']::before { left: 8%; width: 2px; opacity: .4; background: #b6e6df; box-shadow: 108px 0 #b6e6df; animation: tech-pulse 3.6s ease-in-out infinite; transform: none; }
+.scene-buttons button[data-value='Studio']:is(:hover, [aria-pressed='true'])::before { opacity: .34; animation: thumbnail-sweep 6s ease-in-out infinite; }
+.scene-buttons button[data-value='Retro Desk']:is(:hover, [aria-pressed='true']) svg { animation: desk-glow 5s ease-in-out infinite; }
+.scene-buttons button[data-value='Arcade']:is(:hover, [aria-pressed='true']) svg { animation: arcade-flicker 4.8s steps(1, end) infinite; }
+.scene-buttons button[data-value='Dark Tech']:is(:hover, [aria-pressed='true'])::before { left: 8%; width: 2px; opacity: .4; background: #b6e6df; box-shadow: 108px 0 #b6e6df; animation: tech-pulse 3.6s ease-in-out infinite; transform: none; }
 
 .edition-buttons { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .edition-buttons button { min-height: 48px; padding: var(--space-1); display: flex; align-items: center; gap: 8px; font-size: 12px; background: transparent; border: 1px solid var(--line); }
@@ -92,9 +92,7 @@ h2 { margin: 0; font-size: 15px; font-weight: 600; }
 .viewport[data-mood='dark'] { color: #f0f2e6; }
 @keyframes scan { to { top: 110%; } }
 @keyframes ambient-breathe { from { opacity: .12; transform: translate3d(-1%, 1%, 0) scale(.98); } to { opacity: .23; transform: translate3d(1%, -1%, 0) scale(1.04); } }
-@keyframes grain-drift { 0% { transform: translate(0); } 25% { transform: translate(-1%, 1%); } 50% { transform: translate(1%, 0); } 75% { transform: translate(0, -1%); } }
 @keyframes cta-breathe { 0%, 100% { box-shadow: 5px 5px 0 var(--ink); } 50% { box-shadow: 7px 7px 0 var(--ink), 0 0 0 5px #d7f5532b; } }
-@keyframes selected-card { 0%, 100% { box-shadow: 3px 3px 0 var(--ink); } 50% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 2px #d7f55355; } }
 @keyframes thumbnail-sweep { 0%, 62% { left: -55%; } 82%, 100% { left: 125%; } }
 @keyframes desk-glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.065) saturate(1.04); } }
 @keyframes arcade-flicker { 0%, 48%, 52%, 100% { filter: brightness(1); } 49%, 51% { filter: brightness(1.14) saturate(1.12); } }
@@ -110,7 +108,7 @@ h2 { margin: 0; font-size: 15px; font-weight: 600; }
   .viewport .play-launch { padding: 15px; font-size: 17px; }
   .view-notes { min-width: 120px; }
 }
-@media (max-width: 700px) {
+@media (max-width: 900px) {
   .workspace { display: block; padding: 14px 14px var(--space-4); }
   .viewport { --viewer-pad: var(--space-2); position: relative; top: 0; margin-top: 0; height: 620px; padding: var(--space-3) var(--viewer-pad); grid-template-rows: 62px minmax(0, 1fr) auto; row-gap: var(--space-3); }
   .hero-type h1 { max-width: 100%; margin: 0 auto; font-size: 8vw; }
@@ -127,10 +125,24 @@ h2 { margin: 0; font-size: 15px; font-weight: 600; }
   .scene-name { padding-block: 9px; }
 }
 @media (max-width: 360px) {
+  .viewport { height: 660px; }
+  .viewport-footer { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .view-notes { justify-items: start; text-align: left; }
+  .view-hint { display: flex; gap: 12px; }
+  .view-hint br { display: none; }
+
   .viewport .play-launch { padding: 13px 10px; font-size: 14px; }
   .materials button { padding: var(--space-1) 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; }
   .swatch:hover, .edition-buttons button:hover, .scene-buttons button:hover, .scene-buttons button:hover svg, .play-launch:hover:not(:disabled) { transform: none; }
+}
+
+/* Tactile feedback belongs to the control being used, not every idle tile. */
+.edition-buttons button, .swatch, .materials button, .reset { transition: transform .15s ease, background-color .15s ease, border-color .15s ease; }
+.edition-buttons button:active, .swatch:active, .materials button:active, .scene-buttons button:active { transform: translateY(1px); }
+.reset:hover { background: #e6edc8; }
+@media (prefers-reduced-motion: reduce) {
+  .edition-buttons button, .swatch, .materials button, .reset, .scene-buttons button, .scene-buttons svg, .play-launch { transition: none; }
 }
