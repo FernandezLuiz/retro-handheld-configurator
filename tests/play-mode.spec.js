@@ -17,6 +17,9 @@ async function enterGame(page, game = 'vector') {
   await phase(page, 'playing')
 }
 
+// These checks name QWERTY keys, so they must not depend on the machine's own layout.
+test.beforeEach(({ page }) => page.addInitScript(() => Object.defineProperty(navigator, 'keyboard', { value: undefined })))
+
 test('Play zooms into the actual canvas screen, plays, and restores configuration and camera', async ({ page }) => {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))

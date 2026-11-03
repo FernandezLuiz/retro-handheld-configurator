@@ -14,6 +14,8 @@ test('3D title fits common screen sizes and all scenes; missing title retains re
     expect(bounds.maxX).toBeLessThan(.95)
     expect(Math.abs(bounds.minX + bounds.maxX)).toBeLessThan(.08)
     expect(bounds.minY).toBeGreaterThan(.65)
+    // Breathing room: the sign clears the handheld's head in the default view.
+    expect(bounds.minY).toBeGreaterThan(state.productTop + .02)
     expect(bounds.maxY).toBeLessThan(.95)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   }

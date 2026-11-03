@@ -20,8 +20,8 @@ for (const name of ['Studio', 'Retro Desk', 'Arcade', 'Dark Tech']) {
       await page.mouse.up()
       await page.waitForTimeout(600)
     }
-    // Remove the existing ~20 degree azimuth, then inspect a 45 degree view.
-    await turn(Math.atan(0.36) / (Math.PI * 2))
+    // Remove the default camera azimuth, then inspect a 45 degree view.
+    await turn(Math.atan(0.10) / (Math.PI * 2))
     const stem = name.toLowerCase().replaceAll(' ', '-')
     await canvas.screenshot({ path: `scripts/environment-previews/${stem}-front.png` })
     await turn(-0.125)

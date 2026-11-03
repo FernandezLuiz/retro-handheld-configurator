@@ -295,10 +295,22 @@ Completed:
 Remaining submission items:
 - recover final moodboard source information where possible; retain honest unknown attribution otherwise
 
-Latest verification (2026-11-03, uncommitted baseline):
-- `npm test`: 22 of 22 passed
-- `npm run test:browser`: 21 of 21 passed (software WebGL, not a native-GPU benchmark)
-- `npm run build`: succeeded, with Vite's non-failing advisory about the 745 kB JavaScript bundle
+Visual upgrade (branch `visual-upgrade`, not yet merged to `main`):
+- remodelled handheld: signature lower-right corner, bezel, diagonal speaker, angled Start/Select, printed marks and rear cartridge
+- rebuilt Arcade: neon corridor with a moon at its vanishing point, attract screens, polished floor and hero plinth
+- per-scene reflection probes, neutral product lighting with Arcade rim lights, shadows and bloom
+- longer lens, product turned to show its corner, oversized 3D title standing behind it
+- full-bleed viewer, printed spec-sheet sidebar, entrance motion, change feedback and scene wipe
+- Studio, Retro Desk (now an evening scene) and Dark Tech individually art-directed; Arcade stays the hero
+- touch: vertical swipes scroll the page, sideways swipes orbit and pinches zoom; key labels follow the player's keyboard layout
+
+Latest verification (2026-11-03, uncommitted on `visual-upgrade`):
+- `npm test`: 26 of 26 passed
+- `npm run test:browser`: 27 tests; 26 passed in the full run, and the title spec passed on rerun after its final spacing fix (software WebGL, not a native-GPU benchmark)
+- `npm run build`: succeeded, with Vite's non-failing advisory about the 780 kB JavaScript bundle
+- not yet checked on a physical phone or for real frame rate on a focused GPU
+
+`src/scene/quality.js` runs bloom, shadows and entrance motion only on capable GPUs. Software renderers use the plain path, and a real device that cannot hold its frame rate steps down once. `?quality=high` or `?quality=low` overrides this for testing.
 
 ## Audience
 
@@ -341,9 +353,9 @@ Any external assets added later should have a licence that allows their use in t
 
 ### Next action
 
-The baseline cleanup and GameBoy product naming are complete, but not yet committed. Next: the major visual redesign. Also recover any available moodboard attribution.
+Review the visual upgrade on a real GPU and phone, then decide what to merge into `main`. Also recover any available moodboard attribution.
 
-Preserve working functionality during the redesign.
+Preserve working functionality during further polish.
 
 ## Development steps
 

@@ -37,7 +37,7 @@ background/light presets without external HDR assets. Scene changes do not
 reset OrbitControls. `src/scene/viewer.js` handles framing, resizing, and loading.
 
 Checks: `npm test`, `npm run test:browser`, and `npm run build`.
-Browser tests use the installed Google Chrome application on this Mac.
+Browser tests use Playwright-managed Chromium.
 
 ## Premium model refinement
 
@@ -135,3 +135,15 @@ thickness is now 2.5 mm in asset coordinates, correcting the previous 35 mm
 refraction displacement; FrontSide rendering removes the redundant back-face
 transmission pass. Opacity stays 1 and depth writing stays enabled.
 See `scripts/environment-art-direction.md` for the final visual and test report.
+
+
+## Visual upgrade
+
+The shell now has per-corner radii with a 24 mm lower-right sweep, echoed by the
+bezel. The speaker became six diagonal slots following that corner, Start/Select
+are angled rubber pills, and the D-pad is larger with a deeper dish. New meshes:
+`bezel_stripe_a`, `bezel_stripe_b`, `bezel_wordmark`, `control_labels`, `cartridge`
+and `cartridge_label`. `rear_vents` was replaced by the rear cartridge bay.
+Printed marks are flat, real font outlines from the project's own Syne and IBM
+Plex Sans files. `body`, `back_panel` and `screen_bezel` carry planar `GRAIN_UV`
+coordinates for the runtime micro-grain normal map.

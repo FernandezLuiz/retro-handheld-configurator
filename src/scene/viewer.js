@@ -7,6 +7,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { centerModel, disposeModel } from './model-utils.js'
 import { createHandheldController } from './handheld.js'
 import { createEnvironment } from './environment.js'
+import { createQuality } from './quality.js'
 
 // Read-only diagnostics used by browser regression checks; no state mutations.
 const viewers = new WeakMap()
@@ -15,14 +16,19 @@ export function inspectViewer(container) { return viewers.get(container)?.() }
 export function createViewer(container) {
   const scene = new THREE.Scene()
   scene.background = new THREE.Color('#eeefea')
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
+  // A longer lens flattens the product like a studio shot and compresses the corridor.
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100)
   camera.position.set(4, 2.7, 6)
 
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setClearColor('#eeefea')
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.05
+  renderer.toneMappingExposure = 1.08
+  const quality = createQuality(renderer)
+  renderer.setPixelRatio(quality.pixelRatio)
+  renderer.shadowMap.enabled = quality.high
+  renderer.shadowMap.type = THREE.PCFShadowMap
   renderer.domElement.setAttribute('aria-label', 'Temporary 3D form. Drag to rotate and scroll to zoom.')
   container.appendChild(renderer.domElement)
 
@@ -36,10 +42,15 @@ export function createViewer(container) {
   controls.minDistance = 4
   controls.maxDistance = 12
   controls.saveState()
+  // OrbitControls claims every touch gesture with an inline touch-action. CSS owns it
+  // instead: outside Play Mode the browser keeps vertical pans, so the page scrolls.
+  renderer.domElement.style.touchAction = ''
 
   const environment = createEnvironment(renderer, scene, container.closest('.viewport'))
   environment.setPreset('Arcade')
   const title = createTitle(scene, () => container.closest('.viewport').classList.add('title-ready'))
+  title.setScene('Arcade')
+  const pipeline = quality.createPipeline(scene, camera)
   let model = createPlaceholder()
   const productRoot = new THREE.Group()
   productRoot.name = 'handheld_presentation'
@@ -53,6 +64,11 @@ export function createViewer(container) {
   const pointerListeners = new AbortController()
   const ATTRACT_DELAY = 18000
   let idleTime = 0
+  // The product stands turned toward the corridor, showing its signature corner.
+  const IDLE_YAW = -0.3
+  let introStart = null
+  const restingCamera = new THREE.Vector3()
+  let pulseStart = null
   let lastInteraction = performance.now()
   let attracting = false
   const stopAttract = () => {
@@ -68,6 +84,27 @@ export function createViewer(container) {
     window.addEventListener(name, stopAttract, { signal: pointerListeners.signal, passive: true })
   }
   document.addEventListener('keydown', stopAttract, { signal: pointerListeners.signal })
+  // Where the page scrolls past the viewer, a wheel scrolls it too. Trackpad pinches
+  // arrive as ctrl+wheel and still zoom. Runs before OrbitControls' own wheel listener.
+  const stackedLayout = window.matchMedia('(max-width: 900px), (pointer: coarse)')
+  renderer.domElement.addEventListener('wheel', event => {
+    if (stackedLayout.matches && !event.ctrlKey) event.stopImmediatePropagation()
+  }, { capture: true, signal: pointerListeners.signal })
+  // A vertical swipe reaches OrbitControls for a few frames before the browser claims
+  // it as a page scroll. When that happens the orbit never happened: undo it whole.
+  let touchOrigin = null
+  renderer.domElement.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'touch' && event.isPrimary) touchOrigin = camera.position.clone()
+  }, { capture: true, signal: pointerListeners.signal })
+  renderer.domElement.addEventListener('pointercancel', event => {
+    if (event.pointerType !== 'touch' || !touchOrigin || savedView) return
+    controls.enableDamping = false
+    controls.update()
+    controls.enableDamping = true
+    camera.position.copy(touchOrigin)
+    restingCamera.copy(touchOrigin)
+    touchOrigin = null
+  }, { signal: pointerListeners.signal })
 
   renderer.domElement.addEventListener('pointermove', event => {
     const bounds = renderer.domElement.getBoundingClientRect()
@@ -103,6 +140,12 @@ export function createViewer(container) {
 
   function updatePlayCamera(dt) {
     if (!savedView) return
+    // Square the product to the lens as the camera arrives at the screen.
+    const settle = playProgress * playProgress * (3 - 2 * playProgress)
+    productRoot.rotation.set(0, IDLE_YAW * (1 - settle), 0)
+    productRoot.position.set(0, 0, 0)
+    productRoot.scale.setScalar(1)
+    pipeline.setPlayFocus(settle)
     playProgress = THREE.MathUtils.clamp(playProgress + (playDestination ? 1 : -1) * dt / playDuration, 0, 1)
     const t = playProgress * playProgress * (3 - 2 * playProgress)
     const size = playSize
@@ -121,7 +164,7 @@ export function createViewer(container) {
     const distance = THREE.MathUtils.lerp(offset.length(), screenDistance, t * t)
     camera.position.copy(target).addScaledVector(direction, distance)
     camera.lookAt(target)
-    handheld.setScreenGlow(0.3 + t * 0.9)
+    handheld.setScreenGlow(0.55 + t * 0.65)
     // Reduce cover-glass glare only while playing; restore the selected product exactly.
     for (const { material, values } of savedView.displayMaterials) for (const [key, value] of Object.entries(values)) {
       material[key] = THREE.MathUtils.lerp(value, key === 'ior' ? 1 : 0, t)
@@ -135,25 +178,29 @@ export function createViewer(container) {
     }
   }
 
-  const defaultDirection = new THREE.Vector3(0.30, 0.14, 1).normalize()
+  // Nearly on the corridor's axis, so the moon sits just off the product's shoulder.
+  const defaultDirection = new THREE.Vector3(0.10, 0.075, 1).normalize()
 
   function frameModel(preserveView = false) {
     if (!framedRadius) return
     const vertical = THREE.MathUtils.degToRad(camera.fov / 2)
     const horizontal = Math.atan(Math.tan(vertical) * camera.aspect)
-    const distance = Math.max(framedRadius / Math.sin(vertical), framedWidthRadius / Math.sin(horizontal)) * 1.36
+    // Portrait screens stack title, product and CTA, so height needs extra room;
+    // width only needs a margin, which keeps narrow phones inside the scene's orbit.
+    const distance = Math.max(framedRadius / Math.sin(vertical) * (camera.aspect < 0.8 ? 1.38 : 1.32), framedWidthRadius / Math.sin(horizontal) * 1.08)
     const offset = camera.position.clone().sub(controls.target)
     const zoomRatio = preserveView && fitDistance ? offset.length() / fitDistance : 1
     const direction = preserveView ? offset.normalize() : defaultDirection
-    // On portrait viewports, balance the title above and CTA below the product.
-    const layoutOffset = camera.aspect < 0.8 ? framedRadius * 0.04 : 0
+    // Sit the product slightly low in frame: the title claims the upper third.
+    const layoutOffset = framedRadius * (camera.aspect < 0.8 ? 0 : 0.09)
     controls.target.set(0, layoutOffset, 0)
     controls.minDistance = framedRadius * 1.3
     // Keep the fitted product view as the furthest view, with a little extra
     // presence so wheel zoom cannot shrink it behind the arcade room.
     controls.maxDistance = distance * 0.95
     camera.position.copy(direction).multiplyScalar(THREE.MathUtils.clamp(distance * zoomRatio, controls.minDistance, controls.maxDistance)).add(controls.target)
-    camera.near = framedRadius / 100
+    // Printed marks sit 0.2 mm proud of the shell: keep depth precision for them.
+    camera.near = framedRadius / 16
     camera.far = distance * 20
     camera.updateProjectionMatrix()
     // Avoid applying residual drag velocity when framing or resetting.
@@ -178,6 +225,12 @@ export function createViewer(container) {
       disposeModel(model)
       model = loadedModel
       productRoot.add(model)
+      loadedModel.traverse(object => {
+        if (!object.isMesh || object.name.startsWith('internal_') || object.name === 'screen_glass') return
+        object.castShadow = true
+        object.receiveShadow = true
+      })
+      if (quality.high && !reducedMotion.matches) introStart = performance.now()
       framedRadius = new THREE.Box3().setFromObject(model).getBoundingSphere(new THREE.Sphere()).radius
       const modelSize = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3())
       framedWidthRadius = Math.hypot(modelSize.x, modelSize.z) / 2
@@ -198,6 +251,7 @@ export function createViewer(container) {
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     renderer.setSize(width, height)
+    pipeline.setSize(width, height)
     if (!savedView && !restoreResize) frameModel(true)
     restoreResize = false
   })
@@ -209,32 +263,51 @@ export function createViewer(container) {
     const elapsed = previousTime === null ? 0 : Math.max(0, (time - previousTime) / 1000)
     const dt = Math.min(elapsed, 0.1)
     previousTime = time
+    quality.sample(elapsed, pipeline)
     if (savedView) updatePlayCamera(elapsed)
     else {
+      pipeline.setPlayFocus(0)
       const shouldAttract = !reducedMotion.matches && !document.hidden && performance.now() - lastInteraction >= ATTRACT_DELAY
       if (shouldAttract !== attracting) {
         attracting = shouldAttract
         controls.autoRotate = attracting
-        controls.autoRotateSpeed = 0.24
+        controls.autoRotateSpeed = 0.42
       }
-      if (!buttonInteraction.active) controls.update()
+      if (!buttonInteraction.active) {
+        controls.update()
+        // OrbitControls' spherical round trip adds float noise each frame. Below this
+        // threshold the camera is at rest, so it stays exactly where it was.
+        if (camera.position.distanceToSquared(restingCamera) < 1e-18) camera.position.copy(restingCamera)
+        else restingCamera.copy(camera.position)
+      }
       if (!reducedMotion.matches) {
         idleTime += dt
         pointer.lerp(pointerTarget, 1 - Math.exp(-dt * 3.5))
-        productRoot.position.y = attracting ? Math.sin(idleTime * 0.7) * 0.018 : 0
-        productRoot.rotation.x = -pointer.y * 0.005
-        productRoot.rotation.y = pointer.x * 0.008
+        const reach = quality.high ? 1 : .2
+        const now = performance.now()
+        const intro = introStart === null ? 1 : Math.min(1, (now - introStart) / 1700)
+        const arrive = 1 - (1 - intro) ** 4
+        if (intro === 1) introStart = null
+        // A decaying swing acknowledges each change without moving the camera.
+        const since = pulseStart === null ? Infinity : (now - pulseStart) / 1000
+        const swing = since < 1.2 ? Math.exp(-since * 5) * Math.sin(since * 13) * .13 : 0
+        if (since >= 1.2) pulseStart = null
+        productRoot.position.y = (attracting ? Math.sin(idleTime * 0.7) * 0.03 : 0) - (1 - arrive) * .32
+        productRoot.rotation.x = -pointer.y * 0.035 * reach
+        productRoot.rotation.y = IDLE_YAW + pointer.x * 0.06 * reach + swing - (1 - arrive) * 1.05
         productRoot.rotation.z = 0
+        productRoot.scale.setScalar(.92 + arrive * .08)
       } else {
         productRoot.position.set(0, 0, 0)
-        productRoot.rotation.set(0, 0, 0)
+        productRoot.rotation.set(0, IDLE_YAW, 0)
+        productRoot.scale.setScalar(1)
       }
     }
     title.update(camera, playProgress, idleTime, reducedMotion.matches)
     frameHandler?.(dt)
     buttonInteraction.update(dt)
     environment.update(dt, reducedMotion.matches)
-    renderer.render(scene, camera)
+    pipeline.render()
   })
 
   viewers.set(container, () => {
@@ -246,9 +319,16 @@ export function createViewer(container) {
     })
     return {
       title: title.inspect(camera),
+      productTop: (() => {
+        const box = new THREE.Box3().setFromObject(model)
+        let top = -Infinity
+        for (const x of [box.min.x, box.max.x]) for (const z of [box.min.z, box.max.z]) top = Math.max(top, new THREE.Vector3(x, box.max.y, z).project(camera).y)
+        return top
+      })(),
       environments: environment.stats(),
       sceneObjects: scene.children.length,
       memory: { ...renderer.info.memory },
+      quality: quality.inspect(),
       camera: camera.position.toArray(),
       product,
       controlsEnabled: controls.enabled,
@@ -291,7 +371,13 @@ export function createViewer(container) {
         controls.update()
         controls.enableDamping = true
         controls.enabled = false
+        // Measure the product square-on: that is how the camera will frame it.
+        productRoot.rotation.set(0, 0, 0)
+        productRoot.position.set(0, 0, 0)
+        productRoot.scale.setScalar(1)
+        productRoot.updateMatrixWorld(true)
         const bounds = new THREE.Box3().setFromObject(model)
+        productRoot.rotation.y = IDLE_YAW
         screenFocus = bounds.getCenter(new THREE.Vector3())
         bounds.getSize(playSize)
       }
@@ -303,7 +389,10 @@ export function createViewer(container) {
     applyConfiguration(configuration) {
       handheld.applyConfiguration(configuration)
       environment.setPreset(configuration.scene)
+      title.setScene(configuration.scene)
+      pipeline.setMood(container.closest('.viewport').dataset.mood === 'dark')
     },
+    pulse() { if (quality.high && !reducedMotion.matches) pulseStart = performance.now() },
     reset() {
       buttonInteraction.clear()
       stopAttract()
@@ -328,6 +417,7 @@ export function createViewer(container) {
       title.dispose()
       container.closest('.viewport').classList.remove('title-ready')
       environment.dispose()
+      pipeline.dispose()
       renderer.dispose()
       renderer.domElement.remove()
     },

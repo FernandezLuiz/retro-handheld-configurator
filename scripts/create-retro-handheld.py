@@ -30,13 +30,19 @@ def material(name, rgb, rough=.5, metal=0, coat=0):
 specs={
  'body':((.77,.76,.71),.60,0,0),
  'back_panel':((.77,.76,.71),.60,0,0),
- 'screen_bezel':((.14,.16,.15),.37,0,.15),
+ 'screen_bezel':((.055,.062,.06),.2,0,.7),
+ 'bezel_stripe_a':((.72,.40,.33),.35,0,.2),
+ 'bezel_stripe_b':((.78,.85,.81),.35,0,.2),
+ 'bezel_wordmark':((.84,.85,.80),.38,0,.1),
+ 'control_labels':((.50,.51,.47),.62,0,0),
+ 'cartridge':((.17,.18,.19),.46,0,.15),
+ 'cartridge_label':((.85,.97,.25),.4,0,.2),
  'screen':((.38,.48,.34),.28,0,.12),
- 'dpad':((.20,.22,.21),.43,0,.1),
- 'button_a':((.49,.20,.27),.26,0,.35),
- 'button_b':((.49,.20,.27),.26,0,.35),
- 'start_button':((.29,.31,.29),.6,0,0),
- 'select_button':((.29,.31,.29),.6,0,0),
+ 'dpad':((.20,.22,.21),.34,0,.25),
+ 'button_a':((.49,.20,.27),.2,0,.65),
+ 'button_b':((.49,.20,.27),.2,0,.65),
+ 'start_button':((.24,.26,.24),.82,0,0),
+ 'select_button':((.24,.26,.24),.82,0,0),
  'speaker':((.10,.12,.11),.65,0,0),
  'side_buttons':((.25,.27,.25),.45,0,.1),
  'screws':((.31,.33,.32),.3,.75,0),
@@ -49,7 +55,6 @@ specs={
  'power_switch':((.26,.28,.26),.44,0,.1),
  'volume_wheel':((.24,.26,.24),.47,0,0),
  'accessory_port':((.18,.20,.19),.35,.6,0),
- 'rear_vents':((.12,.14,.12),.65,0,0),
  'screw_wells':((.20,.22,.20),.5,0,0),
  'internal_pcb':((.12,.29,.22),.58,.05,0),
  'internal_battery':((.58,.61,.60),.42,.45,0),
@@ -72,7 +77,7 @@ glass.inputs['Transmission Weight'].default_value=.97
 glass.inputs['IOR'].default_value=1.46
 led=mats['status_led'].node_tree.nodes.get('Principled BSDF')
 led.inputs['Emission Color'].default_value=(.12,.22,.055,1)
-led.inputs['Emission Strength'].default_value=.35
+led.inputs['Emission Strength'].default_value=3
 
 # Small bevels and explicit round-rectangle sections avoid high subdivision.
 def activate(obj):
@@ -110,16 +115,22 @@ def box(name,loc,dims,bevel=.0005):
     return finish(obj,name,bevel,segments=1 if min(dims)<.0015 else 3)
 
 def rr_points(w,h,r,n=8):
+    # r is one radius, or per-corner (top right, top left, bottom left, bottom right).
+    tr,tl,bl,br=r if isinstance(r,tuple) else (r,r,r,r)
     result=[]
-    for cx,cz,start in [(w/2-r,h/2-r,0),(-w/2+r,h/2-r,90),(-w/2+r,-h/2+r,180),(w/2-r,-h/2+r,270)]:
+    for c,cx,cz,start in [(tr,w/2-tr,h/2-tr,0),(tl,-w/2+tl,h/2-tl,90),(bl,-w/2+bl,-h/2+bl,180),(br,w/2-br,-h/2+br,270)]:
         for i in range(n+1):
             angle=math.radians(start+i*90/n)
-            result.append((cx+math.cos(angle)*r,cz+math.sin(angle)*r))
+            result.append((cx+math.cos(angle)*c,cz+math.sin(angle)*c))
     return result
 
-def rounded(name,loc,dims,r,edge=.0006):
+def inset_radius(r,amount,floor=.0004):
+    return tuple(max(floor,c-amount) for c in r) if isinstance(r,tuple) else max(floor,r-amount)
+
+def rounded(name,loc,dims,r,edge=.0006,rot=0):
     w,d,h=dims
-    e=min(edge,d*.45,r*.45)
+    smallest=min(r) if isinstance(r,tuple) else r
+    e=min(edge,d*.45,smallest*.45)
     sections=[]
     for step in range(4):
         a=step*math.pi/6
@@ -131,7 +142,7 @@ def rounded(name,loc,dims,r,edge=.0006):
         sections.append((d/2-e+e*math.sin(a),inset))
     verts=[]
     for y,inset in sections:
-        verts.extend((x,y,z) for x,z in rr_points(w-2*inset,h-2*inset,r-inset,n=6 if max(w,h)>.025 else 4))
+        verts.extend((x,y,z) for x,z in rr_points(w-2*inset,h-2*inset,inset_radius(r,inset),n=9 if isinstance(r,tuple) else 6 if max(w,h)>.025 else 4))
     n=len(verts)//len(sections)
     faces=[tuple(range(n-1,-1,-1))]
     for j in range(len(sections)-1):
@@ -143,11 +154,28 @@ def rounded(name,loc,dims,r,edge=.0006):
     obj=bpy.data.objects.new(name,mesh)
     scene.collection.objects.link(obj)
     obj.location=loc
+    obj.rotation_euler=(0,rot,0)
     activate(obj)
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.mesh.normals_make_consistent(inside=False)
     bpy.ops.object.mode_set(mode='OBJECT')
+    return finish(obj,name)
+
+def label(name,string,loc,size,font,align='LEFT'):
+    # Real outlines stay crisp at any zoom. Flat, like pad printing: Syne's glyphs
+    # overlap their own contours, which an extruded solid turns into broken faces.
+    bpy.ops.object.text_add(location=(0,0,0),rotation=(math.pi/2,0,0))
+    obj=bpy.context.object
+    obj.data.body=string
+    obj.data.font=bpy.data.fonts.load(str(ROOT/'public/fonts'/font),check_existing=True)
+    obj.data.size=size
+    obj.data.resolution_u=2
+    obj.data.align_x=align
+    activate(obj)
+    bpy.ops.object.convert(target='MESH')
+    obj=bpy.context.object
+    obj.location=loc
     return finish(obj,name)
 
 def cylinder(name,loc,radius,depth,bevel=.0004,axis='Y',vertices=40):
@@ -190,37 +218,50 @@ def ring(name,loc,outer,inner,depth,axis='Y'):
     return obj
 
 # Two actual hollow housing halves, separated by a 0.6 mm gasket seam.
-body=rounded('body',(0,-.0054,0),(.090,.0172,.148),.0086,.0010)
-cut(body,rounded('cut',(0,-.002,0),(.085,.018,.143),.0069,.0008))
+# The sweeping lower-right corner is the product's signature silhouette.
+SHELL=(.007,.007,.010,.024)
+body=rounded('body',(0,-.0054,0),(.090,.0172,.148),SHELL,.0014)
+cut(body,rounded('cut',(0,-.002,0),(.085,.018,.143),inset_radius(SHELL,.0025),.0008))
 # Front skin thickness 3 mm; rear half is only 2.5 mm thick.
-rear=rounded('back_panel',(0,.0091,0),(.0894,.0106,.1474),.0084,.0011)
-cut(rear,rounded('cut',(0,.005,0),(.0844,.014,.1424),.0064,.0006))
+rear=rounded('back_panel',(0,.0091,0),(.0894,.0106,.1474),inset_radius(SHELL,.0003),.0014)
+cut(rear,rounded('cut',(0,.005,0),(.0844,.014,.1424),inset_radius(SHELL,.0028),.0006))
 # The gasket seats 0.1 mm into each half so its edges cannot leak background.
-seam=rounded('shell_seam',(0,.0035,0),(.0885,.0008,.1465),.0083,.0001)
-cut(seam,rounded('cut',(0,.0035,0),(.085,.004,.143),.0066,.0002))
+seam=rounded('shell_seam',(0,.0035,0),(.0885,.0008,.1465),inset_radius(SHELL,.00075),.0001)
+cut(seam,rounded('cut',(0,.0035,0),(.085,.004,.143),inset_radius(SHELL,.0025),.0002))
+# Machined parting line across the shoulder, and a stepped pixel mark low on the shell.
+cut(body,box('cut',(0,-.01415,.0672),(.0815,.0009,.0007),0))
+for i,(x,z,size) in enumerate([(-.0385,-.0655,.0026),(-.0345,-.0655,.0019),(-.0385,-.0612,.0019),(-.0312,-.0655,.0012),(-.0385,-.0582,.0012)]):
+    cut(body,box('cut',(x,-.01415,z),(size,.0009,size),0))
 
 # Screen pocket and a four-layer display: bezel / frame / LCD / thin glass.
-cut(body,rounded('cut',(0,-.013,.031),(.069,.012,.058),.004,.0006))
-bezel=rounded('screen_bezel',(0,-.0145,.030),(.0775,.0056,.0675),.0054,.00065)
+cut(body,rounded('cut',(0,-.013,.031),(.069,.012,.058),(.004,.004,.004,.008),.0006))
+# The bezel echoes the shell's sweeping corner at a smaller scale.
+bezel=rounded('screen_bezel',(0,-.0145,.030),(.0775,.0056,.0675),(.0045,.0045,.0055,.016),.0009)
 cut(bezel,rounded('cut',(0,-.0145,.032),(.066,.013,.052),.003,.0002))
 frame=rounded('display_frame',(0,-.0156,.032),(.0666,.0016,.0526),.0033,.00025)
 cut(frame,rounded('cut',(0,-.0156,.032),(.0624,.005,.0484),.0022,.0002))
 rounded('screen',(0,-.0147,.032),(.0625,.001,.0485),.0022,.00015)
 rounded('screen_glass',(0,-.0162,.032),(.0648,.0006,.0508),.0026,.00012)
 cylinder('status_led',(.029,-.01765,.001),.00115,.0007,.0002,vertices=24)
+stripes=[box('bezel_stripe_a',(-.0115,-.0174,.0618),(.0485,.0003,.0006),0)]
+for x,size in [(.0172,.0011),(.0202,.0008),(.0226,.0005)]:
+    stripes.append(box('bezel_stripe_a',(x,-.0174,.0618),(size,.0003,.0006),0))
+join(stripes,'bezel_stripe_a')
+box('bezel_stripe_b',(-.0115,-.0174,.0604),(.0485,.0003,.0006),0)
+label('bezel_wordmark','GameBoy',(-.0335,-.01745,-.0002),.0046,'syne-800.ttf')
 
 # Recessed circular wells and a shallow dished D-pad, not floating controls.
 wells=[]
-for x,z,r in [(-.022,-.022,.014),(.028,-.016,.0085),(.009,-.029,.0085)]:
+for x,z,r in [(-.022,-.022,.0155),(.028,-.016,.0085),(.009,-.029,.0085)]:
     cut(body,cylinder('cut',(x,-.013,z),r,.009,0))
     well=cylinder('control_wells',(x,-.01175,z),r+.0003,.0049,.00018)
     # A blind bore leaves travel clearance behind the moving pivot and buttons.
     cut(well,cylinder('cut',(x,-.013,z),r-.0011,.0054,0))
     wells.append(well)
 
-w,a=.0118,.0042
+w,a=.0130,.0046
 outline=[(-a,w),(a,w),(a,a),(w,a),(w,-a),(a,-a),(a,-w),(-a,-w),(-a,-a),(-w,-a),(-w,a),(-a,a)]
-verts=[(x,y,z) for y in [-.002,.002] for x,z in outline]
+verts=[(x,y,z) for y in [-.0026,.002] for x,z in outline]
 n=len(outline)
 faces=[tuple(range(n-1,-1,-1)),tuple(range(n,2*n))]+[(i,(i+1)%n,(i+1)%n+n,i+n) for i in range(n)]
 mesh=bpy.data.meshes.new('dpad_geometry')
@@ -234,7 +275,7 @@ bpy.ops.object.mode_set(mode='EDIT')
 bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.mesh.normals_make_consistent(inside=False)
 bpy.ops.object.mode_set(mode='OBJECT')
-finish(dpad,'dpad',.0007)
+finish(dpad,'dpad',.00095)
 # Concave thumb seat and an underlying pivot skirt, joined to the same color mesh.
 bpy.ops.mesh.primitive_uv_sphere_add(segments=24,ring_count=12,radius=.011,location=(-.022,-.0266,-.022))
 cut(dpad,bpy.context.object)
@@ -245,26 +286,29 @@ for name,x,z in [('button_a',.028,-.016),('button_b',.009,-.029)]:
     # A shallow dished thumb contact, not a flat cylinder cap.
     bpy.ops.mesh.primitive_uv_sphere_add(segments=32,ring_count=16,radius=.023,location=(x,-.0396,z))
     cut(button,bpy.context.object)
-for name,x in [('select_button',-.009),('start_button',.012)]:
-    cut(body,rounded('cut',(x,-.013,-.046),(.014,.007,.0058),.0024,.0003))
-    well=rounded('control_wells',(x,-.0123,-.046),(.0144,.0036,.0062),.0026,.0003)
-    cut(well,rounded('cut',(x,-.0133,-.046),(.0123,.0046,.0043),.0018,.0002))
+# Angled rubber pills: the thumb reaches them on a natural arc from the D-pad.
+PILL=math.radians(24)
+for name,x,z in [('select_button',-.0165,-.0530),('start_button',.0020,-.0530)]:
+    cut(body,rounded('cut',(x,-.013,z),(.014,.007,.0058),.0024,.0003,PILL))
+    well=rounded('control_wells',(x,-.0123,z),(.0144,.0036,.0062),.0026,.0003,PILL)
+    cut(well,rounded('cut',(x,-.0133,z),(.0123,.0046,.0043),.0018,.0002,PILL))
     wells.append(well)
-    rounded(name,(x,-.0137,-.046),(.012,.0026,.004),.0017,.0004)
+    rounded(name,(x,-.0137,z),(.012,.0026,.004),.0017,.0004,PILL)
 join(wells,'control_wells')
+marks=[label('control_labels',text,(x,-.0142,z),.0026,'plex-600.ttf','CENTER') for text,x,z in [('A',.028,-.0282),('B',.009,-.0412),('SELECT',-.0182,-.0628),('START',.0003,-.0628)]]
+join(marks,'control_labels')
 
-# A tidy two-row array of real perforations above a recessed acoustic cloth plate.
-for row in range(2):
-    for col in range(7):
-        x=-.0195+col*.0065
-        z=-.059-row*.004
-        cut(body,cylinder('cut',(x,-.012,z),.00115,.008,0,vertices=16))
-cloth=rounded('speaker',(0,-.0098,-.061),(.047,.0007,.009),.002,.0002)
-# Recessed acoustic ribs seen only through the existing grille perforations.
-ribs=[cloth]
-for x in [-.018,-.012,-.006,0,.006,.012,.018]:
-    ribs.append(box('speaker',(x,-.01025,-.061),(.0005,.00025,.007),.00008))
-join(ribs,'speaker')
+# Six diagonal speaker slots that follow the sweep of the lower-right corner.
+SLOT=math.radians(35)
+GRILLE=(.0235,-.053)
+U=(math.sin(math.radians(35)),math.cos(math.radians(35)))
+V=(U[1],-U[0])
+for i in range(6):
+    off=(i-2.5)*.0042
+    length=.020-abs(off)*.6
+    cut(body,rounded('cut',(GRILLE[0]+V[0]*off,-.012,GRILLE[1]+V[1]*off),(.0021,.008,length),.00095,.0002,SLOT))
+# Blind acoustic backing, so the slots read as depth rather than a view into the room.
+rounded('speaker',(GRILLE[0],-.0098,GRILLE[1]),(.022,.0007,.026),.002,.0002,SLOT)
 
 # Rear battery door fitted into the rear shell, with a reveal and thumbnail latch.
 cut(rear,rounded('cut',(0,.012,-.010),(.063,.010,.086),.005,.0003))
@@ -276,10 +320,14 @@ door=rounded('back_panel',(0,.01345,-.010),(.0622,.0018,.0852),.0046,.0003)
 # Blind thumb recess: the former through-cut exposed the room around the latch.
 cut(door,rounded('cut',(0,.0145,-.048),(.018,.0014,.0038),.0014,.00015))
 rounded('battery_latch',(0,.014,-.048),(.014,.0005,.0026),.001,.00015)
-# A small upper service ventilation band.
-for x in [-.014,-.007,0,.007,.014]:
-    cut(rear,rounded('cut',(x,.013,.051),(.003,.007,.009),.001,.0002))
-rounded('rear_vents',(0,.0116,.051),(.039,.0008,.015),.002,.0002)
+# Upper rear cartridge bay, with an inserted cartridge and printed label.
+cut(rear,rounded('cut',(0,.0140,.0545),(.0465,.0032,.0345),.002,.0002))
+cartridge=rounded('cartridge',(0,.01425,.0545),(.045,.0028,.033),.0016,.0004)
+grip=[cartridge]
+for z in [.0668,.0650,.0632]:
+    grip.append(box('cartridge',(0,.01575,z),(.038,.0006,.0009),.0001))
+join(grip,'cartridge')
+rounded('cartridge_label',(0,.0158,.0468),(.037,.0003,.0145),.0008,.0001)
 join([rear,door],'back_panel')
 
 # Tactile right power slider, left rocker, and a recessed knurled volume wheel.
@@ -338,7 +386,7 @@ join(screw_wells,'screw_wells')
 pcb=rounded('internal_pcb',(0,-.002,0),(.064,.0014,.119),.004,.00025)
 # Shoulder notch clears the volume assembly; lower cutout follows speaker driver.
 cut(pcb,rounded('cut',(-.032,-.002,.025),(.007,.006,.019),.002,.00025))
-cut(pcb,cylinder('cut',(0,-.002,-.060),.007,.006,0,vertices=24))
+cut(pcb,cylinder('cut',(GRILLE[0],-.002,GRILLE[1]),.0078,.006,0,vertices=24))
 for x in [-.027,.027]:
     for z in [-.053,.053]: cut(pcb,cylinder('cut',(x,-.002,z),.0015,.005,0,vertices=16))
 rounded('internal_battery',(0,.006,.005),(.049,.007,.069),.003,.001)
@@ -346,8 +394,8 @@ strap=rounded('internal_battery_strap',(0,.0097,.005),(.012,.0007,.066),.001,.00
 rounded('internal_chip_main',(-.005,-.0044,-.020),(.021,.0032,.019),.001,.0003)
 rounded('internal_chip_power',(.019,-.0042,-.035),(.010,.0028,.010),.0008,.00025)
 # Speaker driver basket and inset central cone remain one internal mesh.
-basket=ring('internal_speaker',(0,-.0059,-.054),.008,.0063,.003)
-cone=cylinder('internal_speaker',(0,-.005,-.054),.0063,.0014,.0004,vertices=32)
+basket=ring('internal_speaker',(GRILLE[0],-.0059,GRILLE[1]),.0075,.0059,.003)
+cone=cylinder('internal_speaker',(GRILLE[0],-.005,GRILLE[1]),.0059,.0014,.0004,vertices=32)
 join([basket,cone],'internal_speaker')
 # Connector path runs along the right of PCB and returns toward the display.
 ribbon=[]
@@ -401,7 +449,11 @@ for obj in objects:
     bm=bmesh.new(); bm.from_mesh(obj.data)
     bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=1e-7)
     bmesh.ops.dissolve_degenerate(bm,edges=list(bm.edges),dist=1e-8)
-    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+    if obj.name in ('bezel_wordmark','control_labels'):
+        # Open printed sheets have no inside to infer: they simply face the viewer.
+        for face in bm.faces:
+            if face.normal.y>0: face.normal_flip()
+    else: bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
     bm.to_mesh(obj.data); bm.free()
     normals(obj)
     activate(obj)
@@ -422,6 +474,11 @@ for obj in objects:
         for loop in obj.data.loops:
             pos=obj.data.vertices[loop.vertex_index].co
             uv.data[loop.index].uv=(pos.x/.0625+.5,pos.z/.0485+.5)
+    if obj.name in ('body','back_panel','screen_bezel'):
+        uv=obj.data.uv_layers.new(name='GRAIN_UV')
+        for loop in obj.data.loops:
+            pos=obj.data.vertices[loop.vertex_index].co
+            uv.data[loop.index].uv=((pos.x+pos.y)*60,(pos.z+pos.y)*60)
     obj.data.name=obj.name+'_geometry'
     obj['component']='internal' if obj.name.startswith('internal_') else 'exterior'
 points=[o.matrix_world @ Vector(v) for o in objects for v in o.bound_box]

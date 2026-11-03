@@ -6,6 +6,8 @@ const inspect = page => page.evaluate(async () => {
 })
 
 test('viewer keeps the camera above scene floors, limits zoom-out, and yields attract rotation to input', async ({ page }) => {
+  // Waits out the real 18 s attract delay, then renders every scene on software WebGL.
+  test.setTimeout(150_000)
   await page.goto('/')
   await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('.product-info')).toHaveCount(0)

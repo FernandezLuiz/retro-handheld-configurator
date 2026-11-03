@@ -73,8 +73,14 @@
       "status": "added"
     },
     {
-      "mesh": "rear_vents",
-      "material": "rear_vents_material",
+      "mesh": "cartridge",
+      "material": "cartridge_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "cartridge_label",
+      "material": "cartridge_label_material",
       "slots": 1,
       "status": "added"
     },
@@ -133,6 +139,24 @@
       "status": "added"
     },
     {
+      "mesh": "bezel_stripe_a",
+      "material": "bezel_stripe_a_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "bezel_stripe_b",
+      "material": "bezel_stripe_b_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
+      "mesh": "bezel_wordmark",
+      "material": "bezel_wordmark_material",
+      "slots": 1,
+      "status": "added"
+    },
+    {
       "mesh": "control_wells",
       "material": "control_wells_material",
       "slots": 1,
@@ -149,6 +173,12 @@
       "material": "button_b_material",
       "slots": 1,
       "status": "modified"
+    },
+    {
+      "mesh": "control_labels",
+      "material": "control_labels_material",
+      "slots": 1,
+      "status": "added"
     },
     {
       "mesh": "side_buttons",
@@ -223,12 +253,12 @@
       "status": "added"
     }
   ],
-  "triangles": 36378,
+  "triangles": 37912,
   "dimensionsMeters": [
     0.09139999747276306,
     0.14800000190734863,
-    0.03240000084042549
+    0.034050000831484795
   ],
-  "bytes": 1070020,
+  "bytes": 1134188,
   "validation": "GLTFLoader parse and all 20 previous mesh names preserved. See npm test and npm run test:browser for control and UI validation."
 }

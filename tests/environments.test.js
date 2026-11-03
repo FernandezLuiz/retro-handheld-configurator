@@ -65,6 +65,25 @@ test('environment props leave a clear normal orbit and sightlines around the her
   }
 })
 
+test('no scene geometry blocks or swallows the camera anywhere on its orbit, including top-down', () => {
+  for (const [name, preset] of Object.entries(scenes)) {
+    const group = createEnvironmentGroup(name, preset)
+    group.updateMatrixWorld(true)
+    // Decals, glows and dust are see-through; the plinth sits below the product.
+    const solid = []
+    group.traverse(object => { if (object.isMesh && !object.material.transparent && !object.name.includes('plinth') && !object.name.includes('riser')) solid.push(object) })
+    for (const polar of [.42, .6, .9, 1.2, 1.5]) for (let step = 0; step < 24; step++) {
+      const angle = step / 24 * Math.PI * 2
+      const origin = new THREE.Vector3(Math.sin(polar) * Math.sin(angle), Math.cos(polar), Math.sin(polar) * Math.cos(angle)).multiplyScalar(8.95)
+      const target = new THREE.Vector3(0, 1.4, 0)
+      const ray = new THREE.Raycaster(origin, target.clone().sub(origin).normalize(), 0, origin.distanceTo(target))
+      const hit = ray.intersectObjects(solid, false)[0]
+      assert.equal(hit?.object.name, undefined, `${name}: blocked at polar ${polar}, step ${step}`)
+    }
+    disposeEnvironmentGroup(group)
+  }
+})
+
 test('Arcade attract details animate in place and honor reduced motion', () => {
   const group = createEnvironmentGroup('Arcade', scenes.Arcade)
   const cabinet = group.getObjectByName('arcade_cabinet')

@@ -9,6 +9,9 @@ async function buttonPoint(page, name) {
   return { x: rect.x + (ndc[0] + 1) * rect.width / 2, y: rect.y + (1 - ndc[1]) * rect.height / 2 }
 }
 
+// These checks name QWERTY keys, so they must not depend on the machine's own layout.
+test.beforeEach(({ page }) => page.addInitScript(() => Object.defineProperty(navigator, 'keyboard', { value: undefined })))
+
 test('physical controls depress independently, release exactly, and leave orbit usable', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
@@ -106,8 +109,9 @@ test('both launch descriptions and every advertised key match the live game acti
       await page.keyboard.up(code)
       await expect.poll(async () => (await inspect(page)).play.pressed).not.toContain(action)
     }
-    await expect(page.locator('.game-hints')).toContainText('RestartR')
-    await expect(page.locator('.game-hints')).toContainText('ExitEsc')
+    await expect(page.locator('.game-restart kbd')).toHaveText('R')
+    await expect(page.locator('.game-exit kbd')).toHaveText('Esc')
+    await expect(page.locator('.game-hints')).toContainText('Space / Z')
     await page.keyboard.press('KeyR')
     expect((await inspect(page)).play.game.lives).toBe(3)
     await page.keyboard.press('Escape')

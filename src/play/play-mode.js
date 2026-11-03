@@ -1,7 +1,7 @@
 import { createGameSurface } from './surface.js'
 import { createSpaceInvadersSurface } from './space-invaders-surface.js'
 import './play.css'
-import { gameControls, bindingsFor, controlMarkup, sessionControls } from './controls.js'
+import { gameControls, bindingsFor, controlMarkup, sessionControls, retryLabel, detectKeyboardLayout, learnKeyboardLayout } from './controls.js'
 
 const bindings = Object.fromEntries(Object.keys(gameControls).map(game => [game, bindingsFor(game)]))
 export function createPlayMode(viewer, app, button) {
@@ -20,21 +20,18 @@ export function createPlayMode(viewer, app, button) {
   overlay.tabIndex = -1
   overlay.innerHTML = `
     <div class="game-shell">
-      <header class="game-header"><div><span class="eyebrow">GAMEBOY OS / SYSTEM 01</span><h2 id="game-title">GAME LIBRARY</h2></div><button type="button" class="game-exit">Exit Game <span>ESC</span></button></header>
-      <div class="game-picker" aria-labelledby="game-picker-title">
-        <div class="game-picker-intro"><span class="game-os-status"><i aria-hidden="true"></i> SYSTEM READY</span><span class="game-os-count">02 PROGRAMS LOADED</span></div>
-        <div class="game-picker-heading"><span class="eyebrow">YOUR NEXT DISTRACTION</span><h3 id="game-picker-title">Choose a program<span aria-hidden="true">_</span></h3><p>Select a game to launch on your handheld.</p></div>
+      <header class="game-header"><div><span class="eyebrow">GAMEBOY OS</span><h2 id="game-title">Choose a game</h2></div><button type="button" class="game-exit"><span class="game-exit-label">Back</span> <kbd></kbd></button></header>
+      <div class="game-picker" aria-labelledby="game-title">
         <div class="game-picker-options">
-          ${Object.entries(gameControls).map(([id, game], index) => `<button type="button" data-game="${id}"><span class="game-card-index">0${index + 1} / ${id === 'vector' ? 'ARCADE' : 'DEFENSE'}</span><span class="game-card-glyph ${id === 'vector' ? 'vector' : 'invaders'}-glyph" aria-hidden="true"><i></i><i></i><i></i></span><span class="game-card-copy"><strong>${game.title}</strong><small>${game.description}</small><span class="game-card-controls">${controlMarkup(id)}</span></span><span class="game-card-launch" aria-hidden="true">↗</span></button>`).join('')}
+          ${Object.entries(gameControls).map(([id, game]) => `<button type="button" data-game="${id}"><span class="game-card-art" aria-hidden="true"><span class="game-card-glyph ${id}-glyph"><i></i><i></i><i></i></span></span><span class="game-card-copy"><strong>${game.title}</strong><small>${game.description}</small></span><span class="game-card-controls" data-controls="${id}"></span><span class="game-card-touch">Play with the handheld's own D-pad and buttons</span><span class="game-card-launch">Play <span aria-hidden="true">▶</span></span></button>`).join('')}
         </div>
-        <div class="game-picker-footer"><span>CLICK / TAP / ENTER TO START</span><span>${sessionControls.restart.label} — RESTART · ${sessionControls.exit.label} — EXIT</span></div>
       </div>
       <div class="game-display"></div>
-      <div class="game-status"><span class="game-score" aria-live="off">SCORE 00000</span><span class="game-message" role="status"></span><button type="button" class="game-restart">Restart <kbd>${sessionControls.restart.label}</kbd></button></div>
+      <div class="game-status"><span class="game-score" aria-live="off">SCORE 00000</span><span class="game-message" role="status"></span><button type="button" class="game-restart">Restart <kbd></kbd></button></div>
       <div class="game-hints" aria-label="Keyboard controls"></div>
       <div class="game-touch" aria-label="Touch game controls">
         <div class="touch-pad"><button data-key="up" aria-label="Thrust">↑</button><button data-key="left" aria-label="Rotate left">←</button><button disabled aria-label="No reverse thrust">↓</button><button data-key="right" aria-label="Rotate right">→</button></div>
-        <div class="touch-actions"><button data-key="action">Z<span>Fire</span></button><button data-key="boost">X<span>Boost</span></button></div>
+        <div class="touch-actions"><button data-key="action">A<span>Fire</span></button><button data-key="boost">B<span>Boost</span></button></div>
       </div>
     </div>`
   overlay.querySelector('.game-display').appendChild(surface.canvas)
@@ -47,6 +44,17 @@ export function createPlayMode(viewer, app, button) {
   const hints = overlay.querySelector('.game-hints')
   const picker = overlay.querySelector('.game-picker')
   const display = overlay.querySelector('.game-display')
+  const exitLabel = overlay.querySelector('.game-exit-label')
+  // Every key name on screen is rendered here, so a layout change reaches them all.
+  function renderKeyLabels() {
+    for (const node of overlay.querySelectorAll('[data-controls]')) node.innerHTML = controlMarkup(node.dataset.controls)
+    exitButton.querySelector('kbd').textContent = sessionControls.exit.label
+    restartButton.querySelector('kbd').textContent = sessionControls.restart.label
+    hints.innerHTML = controlMarkup(selectedGame)
+    if (surface.game.state.phase === 'over' && phase === 'playing') message.textContent = `Game over — ${retryLabel()} to restart`
+  }
+  renderKeyLabels()
+  detectKeyboardLayout().then(renderKeyLabels)
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const lifetime = new AbortController()
   let keyboard = null
@@ -77,12 +85,13 @@ export function createPlayMode(viewer, app, button) {
     viewer.setScreenTexture(surface.texture)
     surface.setReducedMotion(reducedMotion.matches)
     title.textContent = gameControls[name].title
-    hints.innerHTML = `${controlMarkup(name)}<span class="control-pair"><b>Restart</b><kbd>${sessionControls.restart.label}</kbd></span><span class="control-pair"><b>Exit</b><kbd>${sessionControls.exit.label}</kbd></span>`
+    hints.innerHTML = controlMarkup(name)
+    exitLabel.textContent = 'Exit game'
     for (const direction of ['left', 'right']) overlay.querySelector(`[data-key="${direction}"]`).setAttribute('aria-label', `${name === 'vector' ? 'Rotate' : 'Move'} ${direction}`)
     overlay.dataset.currentGame = name
     phase = 'playing'; overlay.dataset.phase = phase
     viewer.pulseStart(); surface.game.restart(); surface.draw(); accumulator = paintTime = 0
-    message.textContent = name === 'vector' ? 'Rotate. Thrust. Clear the field.' : 'Move. Fire. Hold the line.'
+    message.textContent = ''
     overlay.focus({ preventScroll: true })
   }
   function setPaused(value) {
@@ -92,7 +101,8 @@ export function createPlayMode(viewer, app, button) {
   function enter() {
     if (phase !== 'idle' || !viewer.canPlay()) return
     phase = 'entering'
-    title.textContent = 'GAME LIBRARY'
+    title.textContent = 'Choose a game'
+    exitLabel.textContent = 'Back'
     surface.setReducedMotion(reducedMotion.matches)
     accumulator = paintTime = 0
     focusBefore = document.activeElement
@@ -113,6 +123,7 @@ export function createPlayMode(viewer, app, button) {
     keyboard = new AbortController()
     const signal = keyboard.signal
     window.addEventListener('keydown', event => {
+      if (learnKeyboardLayout(event)) renderKeyLabels()
       if (event.metaKey || event.ctrlKey || event.altKey) return
       if (sessionControls.exit.codes.includes(event.code)) { event.preventDefault(); exit(); return }
       if (event.code === 'Tab') {
@@ -202,7 +213,7 @@ export function createPlayMode(viewer, app, button) {
       paintTime %= 1 / 60
       surface.draw()
       score.textContent = `SCORE ${String(surface.game.state.score).padStart(5, '0')}`
-      if (surface.game.state.phase === 'over') message.textContent = 'Game over — R / Space / Z to restart'
+      if (surface.game.state.phase === 'over') message.textContent = `Game over — ${retryLabel()} to restart`
     }
   }
   button.addEventListener('click', enter, { signal: lifetime.signal })

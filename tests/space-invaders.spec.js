@@ -5,6 +5,9 @@ const inspect = page => page.evaluate(async () => {
   return inspectViewer(document.querySelector('#scene'))
 })
 
+// These checks name QWERTY keys, so they must not depend on the machine's own layout.
+test.beforeEach(({ page }) => page.addInitScript(() => Object.defineProperty(navigator, 'keyboard', { value: undefined })))
+
 test('game selection launches Space Invaders with movement, shooting and restart', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('#play')).toBeEnabled()

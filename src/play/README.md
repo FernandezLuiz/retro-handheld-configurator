@@ -6,6 +6,8 @@ independence are preserved.
 
 ## Controls
 
+Bindings use physical key positions (`event.code`). The table names QWERTY keys; on screen, `controls.js` labels each key with what it prints on the player's real layout, so A / W / Z read Q / Z / W on AZERTY.
+
 | Input | Action |
 | --- | --- |
 | Left / A | Rotate counter-clockwise |
@@ -82,8 +84,8 @@ preserves the working gameplay code and updates this documentation.
 
 Verification commands:
 
-- `npm test`: 22 unit tests covering game mechanics and the existing product.
-- `npm run test:browser`: 21 Playwright checks covering the configurator, four scenes,
+- `npm test`: 26 unit tests covering game mechanics and the existing product.
+- `npm run test:browser`: 27 Playwright checks covering the configurator, four scenes,
   Play transitions/restoration, rotation/thrust/fire/boost, tactile feedback,
   palette pixels, repeated-session listener/resource counts, mobile input,
   missing-model fallback, and Game Over/Space retry.

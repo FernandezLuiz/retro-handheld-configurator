@@ -7,9 +7,9 @@ import { palettes, defaults, finishes, scenes, editions, selectedEdition, update
 
 let configuration = { ...defaults }
 
-const colorSection = (part, label) => `
+const colorSection = (part, label, index) => `
   <section class="option-section" aria-labelledby="${part}-title">
-    <div class="section-heading"><h2 id="${part}-title">${label}</h2>
+    <div class="section-heading"><span class="section-index" aria-hidden="true">${index}</span><h2 id="${part}-title">${label}</h2>
     <span class="selection" data-selection="${part}"></span></div>
     <div class="swatches" role="group" aria-label="${label} color">
       ${palettes[part].map(color => `<button type="button" class="swatch" style="--swatch: ${color.value}" data-option="${part}" data-value="${color.name}" aria-label="${label}: ${color.name}" title="${color.name}" aria-pressed="false"></button>`).join('')}
@@ -21,23 +21,25 @@ document.querySelector('#app').innerHTML = `
     <section class="viewport" aria-label="Interactive 3D preview">
       <div class="hero-type"><h1>GameBoy</h1></div>
       <div id="scene" class="scene"></div>
+      <div class="viewer-hud" aria-hidden="true"><div class="hud-spec"><b>GB-01</b><span data-hud="edition"></span><span data-hud="material"></span></div><div class="hud-scene"><span>SCENE</span><b data-hud="scene"></b></div></div>
+      <div class="scene-wipe" aria-hidden="true"></div>
       <div class="viewport-footer">
-        <div class="viewport-actions"><span class="eyebrow">YOUR NEXT DISTRACTION ↓</span><button type="button" id="play" class="play-launch" disabled><span aria-hidden="true">▶</span> ENTER GAME</button></div>
-        <div class="view-notes"><span class="view-hint"><span>Drag to rotate</span><br><span>Scroll to zoom</span></span></div>
+        <div class="viewport-actions"><span class="eyebrow">YOUR NEXT DISTRACTION</span><button type="button" id="play" class="play-launch" disabled><span aria-hidden="true">▶</span> ENTER GAME</button></div>
+        <div class="view-notes"><span class="view-hint hint-pointer"><span>Drag to rotate</span><br><span>Scroll to zoom</span></span><span class="view-hint hint-touch"><span>Swipe ↔ to rotate</span><br><span>Pinch to zoom</span></span></div>
       </div>
     </section>
     <aside class="sidebar" aria-labelledby="configurator-title">
       <div class="sidebar-intro"><h2 id="configurator-title">Make it yours</h2><p>Pick a world. Build a mood. Get lost in play.</p></div>
       <section class="option-section preset-section" aria-labelledby="scene-title">
-        <div class="section-heading"><h2 id="scene-title">Scene</h2><span class="selection" data-selection="scene"></span></div>
+        <div class="section-heading"><span class="section-index" aria-hidden="true">01</span><h2 id="scene-title">Scene</h2><span class="selection" data-selection="scene"></span></div>
         <div class="preset-buttons scene-buttons" role="group" aria-label="Scene">${Object.keys(scenes).map(name => `<button type="button" data-option="scene" data-value="${name}" aria-pressed="false">${scenePreview(name)}<span class="scene-name">${name}</span><span class="selected-tag" aria-hidden="true">SELECTED</span></button>`).join('')}</div>
       </section>
       <section class="option-section preset-section editions-section" aria-labelledby="editions-title">
-        <div class="section-heading"><h2 id="editions-title">Edition</h2><span class="selection" id="edition-selection">Classic</span></div>
+        <div class="section-heading"><span class="section-index" aria-hidden="true">02</span><h2 id="editions-title">Edition</h2><span class="selection" id="edition-selection">Classic</span></div>
         <div class="preset-buttons edition-buttons" role="group" aria-label="Editions">${Object.keys(editions).map(name => `<button type="button" data-edition="${name}" aria-pressed="false"><span class="edition-chip" aria-hidden="true" style="--chip: ${resolveConfiguration({ ...defaults, ...editions[name] }).colors.body}; --chip-accent: ${resolveConfiguration({ ...defaults, ...editions[name] }).colors.buttons}"></span>${name}</button>`).join('')}</div>
       </section>
-      ${colorSection('body', 'Body')}${colorSection('buttons', 'Buttons')}${colorSection('dpad', 'D-pad')}${colorSection('screen', 'Screen')}
-      <section class="option-section material-section" aria-labelledby="material-title"><div class="section-heading"><h2 id="material-title">Material</h2><span class="selection" data-selection="material"></span></div><div class="materials" role="group" aria-label="Material">${Object.keys(finishes).map((material, i) => `<button type="button" data-option="material" data-value="${material}" aria-pressed="false"><span aria-hidden="true">${['●', '◕', '▧'][i]}</span>${material}</button>`).join('')}</div></section>
+      ${colorSection('body', 'Body', '03')}${colorSection('buttons', 'Buttons', '04')}${colorSection('dpad', 'D-pad', '05')}${colorSection('screen', 'Screen', '06')}
+      <section class="option-section material-section" aria-labelledby="material-title"><div class="section-heading"><span class="section-index" aria-hidden="true">07</span><h2 id="material-title">Material</h2><span class="selection" data-selection="material"></span></div><div class="materials" role="group" aria-label="Material">${Object.keys(finishes).map(material => `<button type="button" data-option="material" data-value="${material}" aria-pressed="false"><i class="finish-orb finish-${material.toLowerCase()}" aria-hidden="true"></i>${material}</button>`).join('')}</div></section>
       <div class="sidebar-footer"><p class="placeholder-note">No wrong combinations.<br>Just your kind of weird.</p><button type="button" class="reset" id="reset"><span aria-hidden="true">↺</span> Reset</button></div>
     </aside>
   </main>`
@@ -69,12 +71,16 @@ function renderSelections() {
   document.querySelectorAll('[data-selection]').forEach(label => {
     label.textContent = configuration[label.dataset.selection]
   })
+  document.querySelector('[data-hud="edition"]').textContent = edition ?? 'Custom'
+  document.querySelector('[data-hud="material"]').textContent = configuration.material
+  document.querySelector('[data-hud="scene"]').textContent = configuration.scene
 }
 
 const app = document.querySelector('#app')
 function handleClick(event) {
   const button = event.target.closest('button')
   if (!button || button.id === 'play' || playMode?.active) return
+  const previousScene = configuration.scene
   if (button.dataset.edition) configuration = updateSelection(configuration, { type: 'edition', value: button.dataset.edition })
   if (button.dataset.option) configuration = updateSelection(configuration, { type: 'option', key: button.dataset.option, value: button.dataset.value })
   if (button.id === 'reset') {
@@ -83,13 +89,14 @@ function handleClick(event) {
   }
   applyConfiguration()
   renderSelections()
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.querySelector('.hero-type h1').animate([
-      { textShadow: '3px 0 #6973f4, -3px 0 #d7f553' },
-      { textShadow: '-2px 0 #6973f4, 2px 0 #d7f553', offset: .45 },
-      { textShadow: '0 0 transparent' },
-    ], { duration: 180, easing: 'steps(2, end)' })
-  }
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  if (configuration.scene !== previousScene) {
+    // A CRT raster sweep masks the room change, like switching channels.
+    document.querySelector('.scene-wipe').animate([
+      { opacity: 1, transform: 'translateY(-100%)' },
+      { opacity: 1, transform: 'translateY(100%)' },
+    ], { duration: 420, easing: 'steps(14, end)' })
+  } else if (button.dataset.edition || button.dataset.option) viewer?.pulse()
 }
 app.addEventListener('click', handleClick)
 applyConfiguration()
