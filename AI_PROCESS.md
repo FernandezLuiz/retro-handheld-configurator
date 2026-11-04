@@ -1,10 +1,10 @@
 # AI-assisted development process
 
-This summary records actual project iterations, not reconstructed prompt transcripts. AI produced implementation drafts; user feedback, source inspection and tests determined what was kept or revised.
+This summary records actual project iterations, not reconstructed prompt transcripts. AI produced implementation drafts; user feedback, source inspection and tests determined what was kept or revised. Sections 1 to 5 were developed with Codex; sections 6 and 7 with Claude Code, which took over from the existing repository, `PLAN.md` and test suite.
 
-## 1. From sneaker to original handheld
+## 1. From sneaker to retro handheld
 
-- **Feedback / goal:** Replace the sneaker concept with an original retro handheld without rebuilding the configurator.
+- **Feedback / goal:** Replace the sneaker concept with a retro handheld without rebuilding the configurator.
 - **AI output:** A Blender Python generator, GLB asset and mappings for named body, screen and control meshes.
 - **Critical revision / validation:** Preserve independent materials and existing controls rather than assume mesh names. GLTFLoader inspection and colour/material tests verified the exported structure and configuration mapping.
 
@@ -36,7 +36,7 @@ This summary records actual project iterations, not reconstructed prompt transcr
 
 - **Feedback / goal:** A clearly visible upgrade of the model, Arcade, materials, lighting, camera, UI and motion, after taking the project over from Codex.
 - **AI output:** A remodelled handheld, a rebuilt neon corridor, per-scene reflections, a bloom and shadow pipeline, a new composition and a redesigned interface.
-- **Critical revision / validation:** The first render was overexposed: bloom and a spotlight on the glossy floor whitened the frame. Later renders turned Classic's grey pink, which a configurator cannot do, so the front light was made neutral and the coloured rims were aimed only at the product. Close-ups exposed zigzag speaker slots (a rotation sign error) and broken wordmark faces (overlapping font contours). Budgets and clearance tests stayed in force: the model and the Arcade were trimmed to fit rather than the limits raised.
+- **Critical revision / validation:** The first render was overexposed: bloom and a spotlight on the glossy floor whitened the frame. Later renders turned Classic's grey pink, which a configurator cannot do, so the front light was made neutral and the coloured rims were aimed only at the product. Close-ups exposed zigzag speaker slots (a rotation sign error) and broken wordmark faces (overlapping font contours). Budgets and clearance tests stayed in force: the model and the Arcade were trimmed to fit rather than the limits raised. The product name also moved from a working title, PIXEL/01, back to GameBoy as a deliberate choice, with the project described as a student concept inspired by the classic Game Boy.
 
 ## 7. Review polish: touch, keyboard labels and scene consistency
 
@@ -46,4 +46,4 @@ This summary records actual project iterations, not reconstructed prompt transcr
 
 ## Submission checks
 
-`npm test`, `npm run test:browser` and `npm run build` are the reproducible verification commands. Playwright uses its managed Chromium installation. Test failures are investigated rather than treated as permission to redesign unrelated systems. Remaining unknown moodboard sources are documented honestly.
+`npm test`, `npm run test:browser` and `npm run build` are the reproducible verification commands. Playwright uses its managed Chromium installation. Test failures are investigated rather than treated as permission to redesign unrelated systems. Remaining unknown moodboard sources are documented honestly. The final suite has 26 unit tests and 27 browser tests.

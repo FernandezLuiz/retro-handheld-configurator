@@ -365,6 +365,6 @@ The final visual identity combines:
 - structured but asymmetric layouts
 - restrained CRT and pixel effects
 
-The result should feel nostalgic without becoming a direct copy of an existing console, game or brand.
+The result should feel nostalgic. It is a student educational prototype inspired by the classic Game Boy, not affiliated with or endorsed by Nintendo, and it does not copy artwork from other consoles, games or brands.
 
 The moodboard acts as a guide for individual visual qualities rather than as something to reproduce literally.

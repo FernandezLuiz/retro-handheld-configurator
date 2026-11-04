@@ -31,6 +31,8 @@ test('four real environments stay bounded, preserve the product and render all f
     await expect(page.locator('#edition-selection')).toHaveText('Atomic')
     await page.evaluate(() => scrollTo(0, 0))
     await page.waitForTimeout(350)
+    // Software rendering can outlast the fixed wait: never capture the raster sweep mid-flight.
+    await page.evaluate(() => Promise.all(document.querySelector('.scene-wipe').getAnimations().map(animation => animation.finished)))
     await page.screenshot({ path: `scripts/scene-${name.toLowerCase().replaceAll(' ', '-')}.png` })
   }
   const warmed = await inspect(page)

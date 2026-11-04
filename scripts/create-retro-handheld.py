@@ -1,4 +1,5 @@
-"""Original unbranded handheld. Blender 5: --background --python this_file.py.
+"""Student educational prototype inspired by the classic Game Boy; not affiliated
+with or endorsed by Nintendo. Blender 5: --background --python this_file.py.
 Meter-scale geometry; front faces -Y in Blender and +Z after glTF export.
 All 12 configurable exterior and 8 original internal names are preserved.
 """

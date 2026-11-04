@@ -1,94 +1,95 @@
-# Final environment and handheld polish
+# Environment and handheld art direction
 
-The UI files and Edition/Scene selection logic are unchanged. Scene switching
-uses four cached groups with only one visible, including its lights. Default
-framing is slightly closer with a lower elevation; OrbitControls behavior and
-scene-independent camera position remain intact.
+This records the final scenes and the handheld's material decisions. The project
+is a student educational prototype inspired by the classic Game Boy, not
+affiliated with or endorsed by Nintendo. The sets use no licensed artwork.
 
-Latest polish adds a tonal cyclorama sweep and layered contact shadow; a profiled
-lamp shade, rolled lip, shelf supports, page-edge details and wall battens at the
-desk; original emissive CRT horizon graphics and cabinet scale variation in the
-arcade; a profiled plinth and machining reveals in Dark Tech. Dark environments
-use a product-focused spotlight with distance falloff so background architecture
-recedes. All designs remain unbranded.
+Scene switching uses four cached groups with only one visible, including its
+lights. Scene and Edition stay independent, and a scene change does not move the
+product or the camera.
 
 ## Final sets
 
-- **Studio:** a circular seamless floor/cove supports viewing from every side.
-  Softbox illumination comes from the existing reflection environment and lights;
-  no softbox geometry is visible. Faint architectural reveals and a filtered
-  contact shadow keep the product-photography composition minimal.
-- **Retro Desk:** a finite walnut desktop with a rounded edge, drawers, brass
-  pulls and tapered legs; plaster room walls; detailed keyboard, cassette,
-  notebook, pencil, angled-stem vintage lamp, analog clock, ceramic mug, framed
-  original geometric artwork and books on a wall shelf. A felt presentation pad
-  anchors the handheld. Grain, fabric and painted-metal variations remain subtle.
-- **Arcade:** an enclosed room with restrained broken-diamond carpet texture,
-  five profiled cabinets at different depths, coin doors, CRT surrounds, original
-  abstract screen graphics, joysticks, six-button decks, illuminated marquees,
-  wall signage, ceiling-mounted light strips and a stool. No licensed artwork.
-- **Dark Tech:** chamfered graphite presentation plinth with an inset light ring;
-  multiple-depth wall bays, service rails, panel joints, panel fastener details,
-  vent arrays, recessed light channels, supported overhead rails, conduits and
-  a small abstract status module. Brushed metal adds fine material variation.
+- **Arcade (default):** a neon corridor running to a striped moon at its vanishing
+  point. Eighteen cabinets with original attract screens line the corridor and
+  dress the hall around the orbit. A polished floor carries the neon, stepped
+  portals and a pink ceiling band lead the eye, and a ringed hero plinth gives the
+  product a stage. Dust drifts slowly through the light.
+- **Studio:** a photographer's seamless sweep with no walls or seams, only a tonal
+  falloff from a bright pool behind the product. It stands on a polished white
+  riser. The softboxes exist only in the reflection probe, so none are visible.
+- **Retro Desk:** early evening at a home desk. A dusk window with blinds gives the
+  room depth, and a beige home computer has a lit CRT. The foreground holds a
+  keyboard, game cartridges, a cassette and a notebook, set back from the orbit.
+  A bell-shaded lamp pools light on the desk and wall, and a shelf with a warm
+  under-glow adds a second layer. A felt pad on the walnut desk anchors the product.
+- **Dark Tech:** a dark product lab. Layered wall bays stay in shadow behind cyan
+  linear light, and one glowing gate behind the product pulls the eye through the
+  room. Lead-in lines on the floor converge on the gate, and the product stands on
+  a low chamfered plinth edged in light.
+
+## Light and reflections
+
+Each scene has its own procedural reflection probe, with emissive panels placed
+where that room's lights are. The dark scenes aim their key and coloured rim lights
+at the product, so the rims cut its silhouette without washing the room, while a
+neutral fill keeps product colours true. Studio uses a clean white kicker instead.
+
+Bloom runs only in the dark scenes, on GPUs that can carry it: bright rooms have no
+emitters to bloom, and the whole frame would glow instead.
 
 ## Orbit safety and performance
 
-Raised props and room architecture leave a 6.6-unit horizontal presentation
-radius clear. Desk/floor/pedestal surfaces stay below the product. Automated
-ray checks cover 24 azimuths at three normal camera heights and three product
-target heights. This designs for normal orbiting without changing the existing
-camera limits or adding new collision controls.
+Raised props and room architecture leave a 6.6-unit horizontal presentation radius
+clear. Automated ray checks cover 24 azimuths at three normal camera heights and
+three product target heights. A second check covers the whole orbit at five
+elevations, including top-down, so no solid scene geometry can block or swallow the
+camera. This designs for normal orbiting without adding collision controls.
 
-Final triangles (including instance multiplicity):
+Current triangles (including instance multiplicity), against a limit of 14,000 per
+scene:
 
-| Scene | Triangles |
-| --- | ---: |
-| Studio | 4,252 |
-| Retro Desk | 13,320 |
-| Arcade | 10,628 |
-| Dark Tech | 10,754 |
+| Scene | Triangles | Meshes |
+| --- | ---: | ---: |
+| Arcade | 13,295 | 166 |
+| Studio | 4,808 | 7 |
+| Retro Desk | 3,134 | 73 |
+| Dark Tech | 4,362 | 145 |
 
-Small procedural material maps use mipmaps; rounded keyboard keys and repeated
-vents use instancing. Geometry, materials and textures are disposed on viewer
-teardown. The GPU-resource switching test checks stable geometries/textures,
-scene child counts, and group UUIDs after warm-up across repeated cycles.
+Geometry, materials and textures are disposed on viewer teardown. The browser
+switching test checks that geometry, texture and object counts stay stable across
+repeated cycles.
+
+## Handheld and Translucent
+
+The GLB has 42 meshes, 37,912 triangles and 1,134,188 bytes, against a limit of
+40,000 triangles. Exact figures are in `retro-handheld-validation.json`, regenerated
+by `node scripts/validate-retro-handheld.js`.
+
+An early shell transmission thickness of 0.035 in the GLB's meter coordinates meant
+35 mm, more than the entire device depth, which displaced the opaque buttons seen
+through it. Double-sided materials also added a back-face transmission pass and
+layered refraction.
+
+The Translucent shell now uses 0.0025 m thickness, FrontSide rendering, opacity 1,
+transparent=false and depthWrite=true. Transmission 0.84, roughness 0.25, IOR 1.46,
+no clearcoat, envMapIntensity 0.62 and specularIntensity 0.7 give a frosted finish
+that keeps the internals visible. There is no alpha-sorted shell or custom shader
+patch.
 
 ## Verification
 
-- `npm test`: product behavior, independent editions/scenes, scene budgets,
-  resource disposal, raised-prop clearance and full-turn sightlines.
-- `npx playwright test`: all product controls/Reset, independent presets,
-  all four scenes, front/three-quarter/rear views, full horizontal rotations,
-  repeated switching and runtime shader errors.
-- `npm run build`: production compilation.
-- `environment-previews/`: captured front, three-quarter and rear-quarter views.
-- `environment-validation.json`: machine-readable final scene budgets.
+- `npm test`: 26 tests. Product behaviour, independent Editions and Scenes, scene
+  budgets, resource disposal, orbit clearance and sightlines.
+- `npm run test:browser`: 27 tests. All product controls and Reset, all four scenes
+  from several angles, repeated switching, Play Mode, touch and runtime shader
+  errors.
+- `npm run build`: production compilation. Vite's advisory about the Three.js bundle
+  exceeding 500 kB is expected.
 
-## Handheld and Atomic correction
+Chrome uses SwiftShader in automated testing. This validates rendering and resource
+stability, not native-GPU frame rate.
 
-The Blender source and GLB were regenerated. All 37 mesh names remain; the asset
-is 35,378 triangles / 1,064,516 bytes. Geometry changes affect `body`, `back_panel`,
-`shell_seam`, `screen_bezel`, `dpad`, `button_a`, `button_b`, `speaker`,
-`side_buttons`, and `internal_solder`. These refine corner/edge radii, button
-thumb dishes, the switch recess, acoustic backing ribs and PCB vias. No mesh was
-added or renamed. All closed-solid materials now export with backface culling;
-`screen_glass` also has a lower-roughness, uncoated lens for a crisper LCD.
-
-The old shell transmission thickness was 0.035 in the GLB's meter coordinates:
-35 mm, exceeding the entire device depth and far exceeding its 2.5–3 mm walls.
-Three.js multiplies this by the model scale before sampling the refraction
-buffer, which displaced opaque button shapes. Double-sided materials also
-triggered an additional back-face transmission pass and layered refraction.
-
-The shell now uses 0.0025 m thickness, FrontSide rendering, opacity 1,
-transparent=false and depthWrite=true. Transmission 0.78, roughness 0.25,
-IOR 1.46, no clearcoat, envMapIntensity 0.28 and specularIntensity 0.38 give a
-soft frosted finish while retaining visible internals and geometric wall depth.
-There is no extra render target, alpha-sorted shell or custom shader patch.
-
-Final validation: 13 Node tests, 8 Chrome tests and production build passed.
-Chrome uses SwiftShader in automated testing; this validates rendering and
-resource stability, not a native-GPU frame-rate benchmark. The build retains
-Vite's existing advisory about the Three.js bundle exceeding 500 kB.
-Atomic front, side and rear captures are in `environment-previews/atomic-polished-*`.
+The browser suite writes `scene-*.png` and `environment-previews/` when it runs. The
+copies in the repository are only as recent as the last time that output was
+committed.

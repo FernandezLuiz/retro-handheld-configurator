@@ -5,6 +5,7 @@ test('graphic identity remains readable and keyboard accessible on desktop and m
   await expect(page.locator('#play')).toBeEnabled({ timeout: 30000 })
   await page.evaluate(() => document.fonts.ready)
   await expect(page.locator('h1')).toHaveText('GameBoy')
+  expect((await page.request.get(await page.locator('link[rel="icon"]').evaluate(link => link.href))).ok()).toBe(true)
   await expect(page.locator('#play')).toContainText('ENTER GAME')
   expect(await page.locator('h1').evaluate(el => getComputedStyle(el).fontFamily)).toContain('Syne')
   await page.locator('[data-value="Arcade"]').focus()
